@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ujian Kamera RBT</title>
+<style>
+body{margin:0;background:#07111f;color:#eefcff;font-family:Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+.card{width:min(800px,95vw);background:#0d2035;border:1px solid #68efff;border-radius:18px;padding:24px;box-shadow:0 0 30px #0aa3c522}
+h1{color:#72f8ff}
+button{padding:12px 18px;border-radius:12px;border:1px solid #72f8ff;background:#133d5a;color:white;font-weight:700;cursor:pointer}
+video{width:100%;max-height:420px;background:#000;border-radius:14px;margin-top:16px;display:none}
+#status{margin-top:16px;padding:14px;border-radius:12px;background:#091727;white-space:pre-wrap;line-height:1.5}
+.good{color:#72f8ff}.bad{color:#ff95a5}
+small{opacity:.8}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>📷 Ujian Kamera RBT</h1>
+<p>Tekan butang di bawah. Halaman ini hanya menguji sama ada Chrome boleh membuka webcam.</p>
+<button id="test">UJI KAMERA</button>
+<div id="status">Status: belum diuji.</div>
+<video id="v" autoplay playsinline muted></video>
+<p><small>Pastikan alamat laman bermula dengan https://</small></p>
+</div>
+<script>
+const s=document.getElementById('status'),v=document.getElementById('v');
+function explain(e){
+ const n=e?.name||'UnknownError',m=e?.message||'';
+ if(n==='NotAllowedError'||n==='SecurityError') return `AKSES DITOLAK (${n})\nChrome tidak membenarkan kamera untuk laman ini.`;
+ if(n==='NotFoundError'||n==='DevicesNotFoundError') return `KAMERA TIDAK DIJUMPAI (${n})\nWindows/browser tidak nampak webcam.`;
+ if(n==='NotReadableError'||n==='TrackStartError') return `KAMERA TIDAK BOLEH DIBACA (${n})\nKemungkinan kamera sedang digunakan aplikasi lain atau Windows menyekat akses.`;
+ if(n==='OverconstrainedError') return `TETAPAN KAMERA TIDAK SESUAI (${n})`;
+ return `RALAT: ${n}\n${m}`;
+}
+document.getElementById('test').onclick=async()=>{
+ s.className='';s.textContent='Sedang meminta akses kamera...';
+ try{
+   if(!window.isSecureContext) throw Object.assign(new Error('Halaman bukan secure context'),{name:'SecurityError'});
+   if(!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('getUserMedia tidak tersedia'),{name:'NotSupportedError'});
+   const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+   v.srcObject=stream;v.style.display='block';
+   const track=stream.getVideoTracks()[0];
+   s.className='good';
+   s.textContent=`BERJAYA ✓\nKamera: ${track?.label||'Webcam'}\nProtocol: ${location.protocol}\nSecure context: ${window.isSecureContext}`;
+ }catch(e){
+   console.error(e);s.className='bad';s.textContent=explain(e)+`\nProtocol: ${location.protocol}\nSecure context: ${window.isSecureContext}`;
+ }
+};
+</script>
+</body>
+</html>
