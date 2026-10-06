@@ -3,14 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RBT Cyber Drone V3 — Tahun 6 Unit 3</title>
+<title>RBT Cyber Drone V3.7 — Tahun 6 Unit 3</title>
 <script src="https://cdn.tailwindcss.com">
-setTimeout(()=>{
- const secure=window.isSecureContext;
- if(!secure){
-   showCameraDiag('AMARAN: Halaman ini bukan Secure Context. Pastikan alamat bermula dengan https://',false);
- }
-},500);
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -113,7 +107,7 @@ button{font:inherit}
     🧠 <b id="mpStatusText">MEDIAPIPE: BELUM AKTIF</b><br>
     ✋ <b id="handStatusText">TANGAN: BELUM DIKESAN</b>
   </div>
-  <div id="missionType" class="glass">🎯 <b id="typeText">RBT CYBER MISSION</b></div>
+  <div id="missionType" class="glass">🎯 <b id="typeText">RBT CYBER MISSION</b><br><span class="small">HALAKAN TAPAK TANGAN KE DRONE & TAHAN 0.75 SAAT</span></div>
 
   <div id="teamPanel" class="glass">
     <div class="font-black mb-1">6 PASUKAN RBT</div>
@@ -155,8 +149,8 @@ button{font:inherit}
 
   <div id="startModal" class="modal">
     <div class="panel glass">
-      <div class="kicker">PROJECTOR EDITION • WEB AR • RBT TAHUN 6</div>
-      <div class="title neon mt-2">RBT CYBER DRONE V3</div>
+      <div class="kicker">HAND TRACKING CONFIRMED EDITION • WEB AR • RBT TAHUN 6</div>
+      <div class="title neon mt-2">RBT CYBER DRONE V3.7</div>
       <div class="subtitle mt-4">Misi Pembangunan Produk</div>
       <p class="mt-4 text-lg">Versi ini direka untuk kelas: kamera murid menjadi latar AR, drone masuk dari tepi, countdown setiap giliran, enam pasukan khas dan Final Boss bersaiz besar.</p>
 
@@ -182,17 +176,6 @@ button{font:inherit}
       <div class="small mt-4">Permainan ini tidak menggunakan suara. A.I. TEKNO memberi arahan melalui teks pada skrin.</div>
     </div>
   </div>
-
-  
-  <div id="cameraDiag" class="glass" style="position:absolute;left:50%;bottom:92px;transform:translateX(-50%);z-index:35;width:min(760px,92vw);padding:12px 14px;border-radius:16px;display:none">
-    <div class="font-black">📷 DIAGNOSIS KAMERA</div>
-    <div id="cameraDiagText" class="small mt-1">Belum diuji.</div>
-    <div class="mt-2 flex gap-2 flex-wrap">
-      <button id="retryCameraBtn" class="btn" type="button">🔄 CUBA KAMERA SEMULA</button>
-      <button id="testCameraBtn" class="btn alt" type="button">🧪 UJI KAMERA SAHAJA</button>
-    </div>
-  </div>
-
 <div id="loadingModal" class="modal" style="display:none">
     <div class="panel glass text-center">
       <div class="subtitle neon">CONNECTING TO RBT CYBER VISION...</div>
@@ -255,7 +238,7 @@ const cv=document.getElementById('game'),ctx=cv.getContext('2d');
 const cam=document.getElementById('cam');
 const vis=document.getElementById('visualCanvas'),vctx=vis.getContext('2d');
 
-let W=0,H=0,DPR=1,started=false,useCam=false,camera=null,hands=null,handLm=null,camStream=null,camLoopId=null,processingFrame=false;
+let W=0,H=0,DPR=1,started=false,useCam=false,hands=null,handLm=null,camStream=null,handLoopRunning=false,handBusy=false;
 let pointer={x:0,y:0,active:false};
 let qi=0,current=null,drones=[],lock=-1,lockStart=0,lockP=0,lastFire=0;
 let score=0,xp=0,combo=1,maxCombo=1,shots=0,correct=0,team=0,teamScores=[0,0,0,0,0,0];
@@ -319,8 +302,6 @@ function start(cameraMode){
  document.getElementById('startModal').style.display='none';document.getElementById('victoryModal').style.display='none';document.getElementById('modeText').textContent=cameraMode?'AR KAMERA + TANGAN':'MOUSE';
  initProgress();hud();newQ();if(cameraMode)initCamera()
 }
-document.getElementById('retryCameraBtn').onclick=async()=>{useCam=true;document.getElementById('modeText').textContent='AR KAMERA + TANGAN';await initCamera();};
-document.getElementById('testCameraBtn').onclick=quickCameraTest;
 document.getElementById('startMouse').onclick=()=>start(false);
 document.getElementById('startCam').onclick=()=>start(true);
 document.getElementById('restart').onclick=()=>start(useCam);
@@ -366,7 +347,14 @@ cv.addEventListener('mousemove',e=>{if(!useCam){pointer.x=e.clientX;pointer.y=e.
 cv.addEventListener('mouseleave',()=>{if(!useCam)pointer.active=false});
 cv.addEventListener('click',e=>{if(started&&!useCam&&questionReady){const i=hit(e.clientX,e.clientY);if(i>=0)fire(i)}});
 
-function hit(x,y){for(let i=0;i<drones.length;i++){const d=drones[i];if(x>d.x-d.w/2&&x<d.x+d.w/2&&y>d.y-d.h/2&&y<d.y+d.h/2)return i}return -1}
+function hit(x,y){
+ for(let i=0;i<drones.length;i++){
+   const d=drones[i];
+   const pad=24;
+   if(x>d.x-d.w/2-pad&&x<d.x+d.w/2+pad&&y>d.y-d.h/2-pad&&y<d.y+d.h/2+pad)return i
+ }
+ return -1
+}
 function fire(i){
  if(!questionReady)return;
  const now=performance.now();if(now-lastFire<520)return;lastFire=now;snd("fire");shots++;
@@ -384,97 +372,37 @@ function fire(i){
 function explode(x,y){for(let i=0;i<58;i++)particles.push({x,y,vx:(Math.random()-.5)*12,vy:(Math.random()-.5)*12,life:1,size:2+Math.random()*6})}
 
 
-function showCameraDiag(msg, good=false){
- const box=document.getElementById('cameraDiag');
- const txt=document.getElementById('cameraDiagText');
- if(!box||!txt)return;
- box.style.display='block';
- txt.textContent=msg;
- txt.style.color=good?'#72f8ff':'#ff95a5';
-}
 
-function cameraErrorMessage(e){
- const name=(e&&e.name)||'UnknownError';
- const msg=(e&&e.message)||'';
- if(name==='NotAllowedError' || name==='SecurityError'){
-   return `AKSES KAMERA DITOLAK (${name}). Klik ikon kamera/kunci di bar alamat Chrome → Site settings → Camera → Allow, kemudian refresh halaman.`;
- }
- if(name==='NotFoundError' || name==='DevicesNotFoundError'){
-   return `KAMERA TIDAK DIJUMPAI (${name}). Pastikan webcam disambung dan Windows dapat mengesannya.`;
- }
- if(name==='NotReadableError' || name==='TrackStartError'){
-   return `KAMERA SEDANG DIGUNAKAN / TIDAK BOLEH DIBACA (${name}). Tutup Zoom, Teams, Meet atau aplikasi kamera lain, kemudian cuba semula.`;
- }
- if(name==='OverconstrainedError' || name==='ConstraintNotSatisfiedError'){
-   return `TETAPAN KAMERA TIDAK SESUAI (${name}). Game akan cuba resolusi lebih rendah.`;
- }
- return `RALAT KAMERA: ${name}${msg?` — ${msg}`:''}`;
-}
-
-async function quickCameraTest(){
- showCameraDiag('Sedang menguji kamera...');
- try{
-   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-     throw new Error('getUserMedia tidak tersedia. Pastikan laman dibuka melalui https://');
-   }
-   const s=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-   const tracks=s.getTracks();
-   tracks.forEach(t=>t.stop());
-   showCameraDiag('KAMERA BERJAYA DIAKSES ✓ — browser membenarkan webcam.', true);
-   return true;
- }catch(e){
-   showCameraDiag(cameraErrorMessage(e), false);
-   return false;
- }
+function setCamStatus(camMsg, mpMsg, handMsg, ok=false){
+ const camEl=document.getElementById('camStatusText');
+ const mpEl=document.getElementById('mpStatusText');
+ const handEl=document.getElementById('handStatusText');
+ if(camEl){camEl.textContent=camMsg;camEl.style.color=ok?'#72f8ff':'#ff95a5'}
+ if(mpEl){mpEl.textContent=mpMsg;mpEl.style.color=ok?'#72f8ff':'#ff95a5'}
+ if(handEl){handEl.textContent=handMsg;handEl.style.color=ok?'#72f8ff':'#ffc95d'}
 }
 
 async function initCamera(){
- const lm=document.getElementById('loadingModal'),
-       fill=document.getElementById('loadingFill'),
-       lt=document.getElementById('loadingText'),
-       camStatus=document.getElementById('camStatusText'),
-       mpStatus=document.getElementById('mpStatusText'),
-       handStatus=document.getElementById('handStatusText');
+ const lm=document.getElementById('loadingModal');
+ const fill=document.getElementById('loadingFill');
+ const lt=document.getElementById('loadingText');
 
  lm.style.display='flex';
- fill.style.width='8%';
- camStatus.textContent='KAMERA: MEMINTA KEBENARAN...';
- mpStatus.textContent='MEDIAPIPE: MENUNGGU...';
- handStatus.textContent='TANGAN: BELUM DIKESAN';
+ fill.style.width='10%';
+ lt.textContent='Membuka kamera...';
+ setCamStatus('KAMERA: MEMBUKA...','MEDIAPIPE: MENUNGGU...','TANGAN: BELUM DIKESAN');
 
  try{
-   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-     throw new Error('Browser tidak menyediakan akses kamera. Buka game melalui HTTPS atau localhost.');
-   }
-
-   lt.textContent='Meminta akses kamera...';
-   try{
-     camStream=await navigator.mediaDevices.getUserMedia({
-       video:{
-         facingMode:'user',
-         width:{ideal:1280},
-         height:{ideal:720},
-         frameRate:{ideal:30,max:30}
-       },
-       audio:false
-     });
-   }catch(firstErr){
-     if(firstErr && (firstErr.name==='OverconstrainedError'||firstErr.name==='ConstraintNotSatisfiedError')){
-       camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-     }else{
-       throw firstErr;
-     }
-   }
-
+   camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
    cam.srcObject=camStream;
    cam.style.display='block';
    await cam.play();
 
-   camStatus.textContent='KAMERA: AKTIF ✓';
-   camStatus.style.color='#72f8ff';
-   fill.style.width='35%';
-
+   document.getElementById('camStatusText').textContent='KAMERA: AKTIF ✓';
+   document.getElementById('camStatusText').style.color='#72f8ff';
+   fill.style.width='40%';
    lt.textContent='Memuatkan MediaPipe Hands...';
+
    hands=new Hands({
      locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
    });
@@ -486,36 +414,70 @@ async function initCamera(){
      minTrackingConfidence:0.35
    });
 
-   hands.onResults(onHand);
+   hands.onResults(res=>{
+     if(res.multiHandLandmarks&&res.multiHandLandmarks.length){
+       handLm=res.multiHandLandmarks[0];
 
-   mpStatus.textContent='MEDIAPIPE: AKTIF ✓';
-   mpStatus.style.color='#72f8ff';
-   fill.style.width='72%';
+       // Same stable palm-center logic as the successful hand-test.html
+       const ids=[0,5,9,13,17];
+       let sx=0,sy=0;
+       ids.forEach(id=>{
+         sx+=handLm[id].x;
+         sy+=handLm[id].y;
+       });
 
-   lt.textContent='Menguji pengesanan tapak tangan...';
+       const px=sx/ids.length;
+       const py=sy/ids.length;
 
-   const processFrame=async()=>{
-     if(!useCam || !hands || !camStream) return;
-     camLoopId=requestAnimationFrame(processFrame);
+       pointer.x=(1-px)*W;
+       pointer.y=py*H;
+       pointer.active=true;
 
-     if(processingFrame || cam.readyState<2) return;
-     processingFrame=true;
+       const handStatus=document.getElementById('handStatusText');
+       handStatus.textContent='TANGAN: DIKESAN ✓';
+       handStatus.style.color='#72f8ff';
+     }else{
+       handLm=null;
+       pointer.active=false;
+       const handStatus=document.getElementById('handStatusText');
+       handStatus.textContent='TANGAN: BELUM DIKESAN';
+       handStatus.style.color='#ffc95d';
+     }
+   });
+
+   document.getElementById('mpStatusText').textContent='MEDIAPIPE: AKTIF ✓';
+   document.getElementById('mpStatusText').style.color='#72f8ff';
+
+   fill.style.width='80%';
+   lt.textContent='Menunggu tapak tangan...';
+
+   handLoopRunning=true;
+   handBusy=false;
+
+   const handLoop=async()=>{
+     if(!handLoopRunning||!useCam||!hands||!camStream)return;
+     requestAnimationFrame(handLoop);
+
+     if(handBusy||cam.readyState<2)return;
+     handBusy=true;
+
      try{
        await hands.send({image:cam});
      }catch(err){
-       mpStatus.textContent='MEDIAPIPE: RALAT';
-       mpStatus.style.color='#ff95a5';
+       console.error('MediaPipe Hands error:',err);
+       document.getElementById('mpStatusText').textContent='MEDIAPIPE: RALAT';
+       document.getElementById('mpStatusText').style.color='#ff95a5';
      }finally{
-       processingFrame=false;
+       handBusy=false;
      }
    };
 
-   processFrame();
+   handLoop();
 
    fill.style.width='100%';
-   lt.textContent='Cyber Vision aktif. Angkat satu tapak tangan di depan kamera.';
-   ai('Angkat satu tapak tangan di depan kamera sehingga status TANGAN DIKESAN muncul.');
-   setTimeout(()=>lm.style.display='none',850);
+   lt.textContent='Cyber Vision aktif. Angkat tapak tangan.';
+   ai('Angkat tapak tangan di hadapan kamera sehingga status TANGAN: DIKESAN muncul.');
+   setTimeout(()=>lm.style.display='none',700);
 
  }catch(e){
    console.error(e);
@@ -523,33 +485,22 @@ async function initCamera(){
    useCam=false;
    cam.style.display='none';
    document.getElementById('modeText').textContent='MOUSE (FALLBACK)';
-   camStatus.textContent='KAMERA: GAGAL';
-   camStatus.style.color='#ff95a5';
-   mpStatus.textContent='MEDIAPIPE: TIDAK AKTIF';
-   mpStatus.style.color='#ff95a5';
-   handStatus.textContent='TANGAN: TIDAK AKTIF';
-   handStatus.style.color='#ff95a5';
-
-   const diagnostic=cameraErrorMessage(e);
-   showCameraDiag(diagnostic,false);
-   ai('Kamera tidak dapat diaktifkan. Lihat kotak Diagnosis Kamera di bawah.');
+   setCamStatus('KAMERA: GAGAL','MEDIAPIPE: TIDAK AKTIF','TANGAN: TIDAK AKTIF');
+   ai('Kamera tidak dapat diaktifkan. Semak kebenaran kamera pada Chrome.');
  }
 }
 
 function stopCamera(){
- try{
-   if(camLoopId) cancelAnimationFrame(camLoopId);
- }catch(e){}
- camLoopId=null;
- processingFrame=false;
+ handLoopRunning=false;
+ handBusy=false;
 
  try{
-   if(camStream) camStream.getTracks().forEach(t=>t.stop());
+   if(camStream)camStream.getTracks().forEach(t=>t.stop());
  }catch(e){}
  camStream=null;
 
  try{
-   if(cam.srcObject) cam.srcObject.getTracks().forEach(t=>t.stop());
+   if(cam.srcObject)cam.srcObject.getTracks().forEach(t=>t.stop());
  }catch(e){}
  cam.srcObject=null;
 
@@ -557,6 +508,13 @@ function stopCamera(){
  handLm=null;
  pointer.active=false;
  cam.style.display='none';
+
+ const c=document.getElementById('camStatusText');
+ const m=document.getElementById('mpStatusText');
+ const h=document.getElementById('handStatusText');
+ if(c){c.textContent='KAMERA: BELUM AKTIF';c.style.color=''}
+ if(m){m.textContent='MEDIAPIPE: BELUM AKTIF';m.style.color=''}
+ if(h){h.textContent='TANGAN: BELUM DIKESAN';h.style.color=''}
 }
 
 function drawBG(t){
