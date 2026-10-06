@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RBT Cyber Drone V3 — Tahun 6 Unit 3</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<style>
+:root{
+  --cyan:#72f8ff;--blue:#2ea9ff;--violet:#8f62ff;--amber:#ffc95d;--red:#ff5370;
+  --ink:#050b12;--slate:#0d1c2d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#03070d;color:#effcff;font-family:Arial,Helvetica,sans-serif}
+button{font:inherit}
+#app{position:relative;width:100vw;height:100dvh;overflow:hidden;background:#07111f}
+#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none;filter:saturate(1.05) contrast(1.05) brightness(.9)}
+#shade{position:absolute;inset:0;background:
+ linear-gradient(180deg,rgba(4,9,17,.34),rgba(4,9,17,.08) 45%,rgba(4,9,17,.42)),
+ radial-gradient(circle at 50% 46%,transparent 0 40%,rgba(2,7,13,.26) 76%,rgba(2,7,13,.62) 100%)}
+#game{position:absolute;inset:0;width:100%;height:100%}
+.glass{background:linear-gradient(180deg,rgba(8,23,40,.76),rgba(5,14,27,.74));backdrop-filter:blur(11px);
+ border:1px solid rgba(114,248,255,.28);box-shadow:0 0 30px rgba(50,220,255,.07),inset 0 1px 0 rgba(255,255,255,.04)}
+.neon{color:var(--cyan);text-shadow:0 0 8px rgba(114,248,255,.82),0 0 22px rgba(92,79,255,.4)}
+.amber{color:var(--amber);text-shadow:0 0 10px rgba(255,201,93,.48)}
+.red{color:#ff95a5;text-shadow:0 0 9px rgba(255,83,112,.56)}
+.modal{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,7,14,.8)}
+.panel{width:min(1000px,94vw);max-height:92vh;overflow:auto;border-radius:26px;padding:24px}
+.title{font-size:clamp(36px,6vw,82px);font-weight:1000;line-height:.88;letter-spacing:-.04em}
+.subtitle{font-size:clamp(20px,2.5vw,34px);font-weight:900}
+.small{font-size:12px;opacity:.8}
+.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:900}
+.btn{border:1px solid rgba(114,248,255,.48);background:linear-gradient(180deg,rgba(21,76,108,.96),rgba(7,31,50,.99));color:white;padding:12px 17px;border-radius:14px;font-weight:900;cursor:pointer;box-shadow:0 0 20px rgba(70,220,255,.14);transition:.18s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 0 28px rgba(70,220,255,.26)}
+.btn.alt{border-color:rgba(255,201,93,.48);background:linear-gradient(180deg,rgba(89,59,18,.97),rgba(43,27,8,.99))}
+.teamBtn{min-height:90px;font-size:17px}
+.teamBtn.selected{outline:3px solid var(--cyan);background:linear-gradient(180deg,rgba(20,106,139,.98),rgba(8,45,68,.98))}
+.hud{position:absolute;left:14px;right:14px;top:14px;z-index:25;display:grid;grid-template-columns:1.05fr 2fr 1.05fr;gap:12px}
+.hudBox{padding:10px 14px;border-radius:16px;min-height:84px}
+#question{font-size:clamp(18px,2.25vw,31px);font-weight:1000;text-align:center;line-height:1.08}
+#progress{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}
+.node{width:9px;height:9px;border-radius:50%;background:#25384f;border:1px solid #74839a}
+.node.done{background:var(--cyan);box-shadow:0 0 9px var(--cyan)}
+#teamPanel{position:absolute;right:18px;top:114px;z-index:24;width:245px;padding:10px;border-radius:16px}
+.teamrow{display:flex;justify-content:space-between;padding:5px 7px;border-radius:9px}
+.teamrow.active{background:rgba(114,248,255,.14);outline:1px solid rgba(114,248,255,.35)}
+#modeBadge{position:absolute;left:18px;top:114px;z-index:24;padding:7px 11px;border-radius:999px}
+#missionType{position:absolute;left:18px;top:238px;z-index:24;padding:8px 11px;border-radius:14px;max-width:270px;font-size:12px}
+#aiBox{position:absolute;left:18px;right:18px;bottom:16px;z-index:28;padding:10px 14px;border-radius:16px;display:flex;align-items:center;gap:11px}
+#aiOrb{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:1000;background:radial-gradient(circle at 35% 30%,#e4ffff 0 6%,#67f0ff 12%,#325da8 56%,#172842 73%);box-shadow:0 0 26px rgba(103,240,255,.82)}
+#toast{position:absolute;left:50%;top:49%;transform:translate(-50%,-50%);z-index:45;padding:18px 24px;border-radius:18px;font-size:clamp(26px,4.5vw,52px);font-weight:1000;text-align:center;display:none;min-width:min(600px,90vw)}
+#visualCard{position:absolute;left:18px;bottom:95px;z-index:23;width:250px;padding:10px;border-radius:16px}
+#visualCanvas{width:100%;height:100px;display:block}
+#bossHud{position:absolute;left:50%;top:112px;transform:translateX(-50%);z-index:30;width:min(560px,62vw);padding:8px 12px;border-radius:16px;text-align:center;display:none}
+#hearts{letter-spacing:4px;font-size:24px}
+#teamTurn{position:absolute;inset:0;z-index:55;display:none;align-items:center;justify-content:center;background:rgba(2,7,14,.76)}
+#countdown{position:absolute;inset:0;z-index:58;display:none;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(9,31,50,.2),rgba(2,7,14,.72))}
+#countText{font-size:clamp(120px,24vw,280px);font-weight:1000;line-height:1;color:white;text-shadow:0 0 22px #72f8ff,0 0 55px #5c4fff}
+.teamSplash{font-size:clamp(38px,8vw,98px);font-weight:1000}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.infoCard{padding:14px;border-radius:16px}
+#loadingBar{height:10px;border-radius:999px;background:#13263d;overflow:hidden}
+#loadingFill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));box-shadow:0 0 12px var(--cyan)}
+@media(max-width:830px){
+ .hud{grid-template-columns:1fr;left:8px;right:8px;top:8px}
+ .hud .side{display:none}
+ #teamPanel{display:none}
+ #modeBadge{top:90px}
+ #missionType{top:215px}
+ #visualCard{display:none}
+ #bossHud{top:90px;width:88vw}
+ .grid3{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <video id="cam" autoplay playsinline muted></video>
+  <div id="shade"></div>
+  <canvas id="game"></canvas>
+
+  <div class="hud">
+    <div class="hudBox glass side">
+      <div class="small">RBT CYBER LAB • TAHUN 6</div>
+      <div class="font-black">UNIT 3: PEMBANGUNAN PRODUK</div>
+      <div id="progress"></div>
+    </div>
+    <div class="hudBox glass">
+      <div id="qnum" class="small text-center">MISSION 0 / 20</div>
+      <div id="question" class="neon">Pilih mod untuk bermula</div>
+    </div>
+    <div class="hudBox glass side text-right">
+      <div><span class="small">SCORE</span> <b id="score">0</b></div>
+      <div><span class="small">COMBO</span> <b id="combo">×1</b></div>
+      <div><span class="small">XP</span> <b id="xp">0</b></div>
+    </div>
+  </div>
+
+  <div id="modeBadge" class="glass">MODE: <b id="modeText">MOUSE</b></div>
+  <div id="handStatus" class="glass" style="position:absolute;left:18px;top:154px;z-index:25;padding:8px 11px;border-radius:14px;font-size:12px;line-height:1.5">
+    📷 <b id="camStatusText">KAMERA: BELUM AKTIF</b><br>
+    🧠 <b id="mpStatusText">MEDIAPIPE: BELUM AKTIF</b><br>
+    ✋ <b id="handStatusText">TANGAN: BELUM DIKESAN</b>
+  </div>
+  <div id="missionType" class="glass">🎯 <b id="typeText">RBT CYBER MISSION</b></div>
+
+  <div id="teamPanel" class="glass">
+    <div class="font-black mb-1">6 PASUKAN RBT</div>
+    <div id="teamRows"></div>
+  </div>
+
+  <div id="bossHud" class="glass">
+    <div class="kicker">FINAL BOSS • MEGA DRONE</div>
+    <div id="hearts">❤️❤️❤️❤️❤️</div>
+    <div class="small">Lima teras mesti dimusnahkan.</div>
+  </div>
+
+  <div id="visualCard" class="glass">
+    <div class="small amber">VISUAL RBT</div>
+    <canvas id="visualCanvas" width="440" height="190"></canvas>
+  </div>
+
+  <div id="aiBox" class="glass">
+    <div id="aiOrb">AI</div>
+    <div>
+      <div class="small neon">A.I. TEKNO</div>
+      <div id="aiText">Sedia membantu Pereka Muda.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="glass"></div>
+
+  <div id="teamTurn">
+    <div class="panel glass text-center">
+      <div class="small amber">GILIRAN SETERUSNYA</div>
+      <div id="teamTurnText" class="teamSplash neon mt-2">ROBO INOVATOR</div>
+      <div class="mt-3 text-lg">Wakil pasukan, sila bersedia di hadapan.</div>
+    </div>
+  </div>
+
+  <div id="countdown">
+    <div id="countText">3</div>
+  </div>
+
+  <div id="startModal" class="modal">
+    <div class="panel glass">
+      <div class="kicker">PROJECTOR EDITION • WEB AR • RBT TAHUN 6</div>
+      <div class="title neon mt-2">RBT CYBER DRONE V3</div>
+      <div class="subtitle mt-4">Misi Pembangunan Produk</div>
+      <p class="mt-4 text-lg">Versi ini direka untuk kelas: kamera murid menjadi latar AR, drone masuk dari tepi, countdown setiap giliran, enam pasukan khas dan Final Boss bersaiz besar.</p>
+
+      <div class="grid3 mt-5">
+        <div class="infoCard glass">✋ <b>OPEN PALM</b><div class="small mt-1">Buka tapak tangan.</div></div>
+        <div class="infoCard glass">🎯 <b>TARGET LOCK</b><div class="small mt-1">Halakan ke drone.</div></div>
+        <div class="infoCard glass">⚡ <b>CHARGE + FIRE</b><div class="small mt-1">Tahan 0.75 saat.</div></div>
+      </div>
+
+      <div class="mt-5">
+        <div class="font-black mb-2">PILIH PASUKAN YANG MULA</div>
+        <div class="grid3" id="teamSelect"></div>
+      </div>
+
+      <div class="mt-5 p-4 rounded-xl" style="background:rgba(255,201,93,.08);border:1px solid rgba(255,201,93,.23)">
+        <b>Ayat kunci:</b> “Kita tidak terus bina. Kita fikir masalah, cari idea, buat lakaran, nilai dan barulah bina.”
+      </div>
+
+      <div class="mt-5 flex flex-wrap gap-3">
+        <button class="btn" id="startCam">📷 MULA AR KAMERA</button>
+        <button class="btn alt" id="startMouse">🖱️ MULA GUNA MOUSE</button>
+      </div>
+      <div class="small mt-4">Permainan ini tidak menggunakan suara. A.I. TEKNO memberi arahan melalui teks pada skrin.</div>
+    </div>
+  </div>
+
+  <div id="loadingModal" class="modal" style="display:none">
+    <div class="panel glass text-center">
+      <div class="subtitle neon">CONNECTING TO RBT CYBER VISION...</div>
+      <div id="loadingText" class="mt-3">Mengaktifkan pengesanan tangan...</div>
+      <div id="loadingBar" class="mt-4"><div id="loadingFill"></div></div>
+    </div>
+  </div>
+
+  <div id="victoryModal" class="modal" style="display:none">
+    <div class="panel glass text-center">
+      <div class="kicker">MISSION COMPLETE</div>
+      <div class="title neon mt-2">TAHNIAH, PEREKA MUDA!</div>
+      <div id="stars" class="text-5xl mt-4"></div>
+      <div class="grid2 mt-5">
+        <div class="infoCard glass"><div class="small">SKOR AKHIR</div><div id="finalScore" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">XP</div><div id="finalXP" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">COMBO TERTINGGI</div><div id="finalCombo" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">KETEPATAN</div><div id="finalAcc" class="text-3xl font-black"></div></div>
+      </div>
+      <div class="mt-5 infoCard glass text-left">
+        <b>DATA RBT DIPULIHKAN:</b><br><br>
+        🔍 Kenal pasti masalah → 💡 Jana idea → ✏️ Hasilkan lakaran → 🔎 Nilai & tambah baik → 🛠️ Bina produk
+      </div>
+      <div class="mt-5 flex justify-center gap-3 flex-wrap">
+        <button class="btn" id="restart">🔄 MAIN SEMULA</button>
+        <button class="btn alt" id="home">🏠 MENU UTAMA</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TEAM_NAMES=["ROBO INOVATOR","CYBER PEREKA","TEKNO KREATIF","MECHA BUILDER","NOVA DESIGN","TITAN RBT"];
+
+const Q=[
+{type:"MASALAH",visual:"books",q:"Buku sering berselerak di atas meja. Apakah masalah utama?",o:["Buku terlalu berat","Tiada tempat penyimpanan yang sesuai","Meja terlalu cantik","Pensel terlalu pendek"],a:1,tip:"Fikirkan punca buku tidak tersusun."},
+{type:"PILIH PRODUK",visual:"stationery",q:"Alat tulis sering hilang dan berselerak. Produk paling sesuai ialah...",o:["Bekas alat tulis","Rak kasut","Bekas makanan","Penyangkut baju"],a:0,tip:"Pilih produk yang menyimpan alat tulis."},
+{type:"PROSES",visual:"flow",q:"Apakah langkah pertama dalam pembangunan produk?",o:["Membina produk","Mengenal pasti masalah","Menjual produk","Menghias produk"],a:1,tip:"Sebelum membina, kita mesti faham masalah."},
+{type:"PROSES",visual:"bulb",q:"Selepas mengenal pasti masalah, apakah langkah seterusnya?",o:["Menjana idea","Membuang bahan","Menjual produk","Terus membina"],a:0,tip:"Selepas masalah diketahui, fikirkan beberapa penyelesaian."},
+{type:"LAKARAN",visual:"sketch",q:"Apakah kegunaan lakaran dalam pembangunan produk?",o:["Menunjukkan idea reka bentuk","Menggantikan produk sebenar","Mengira markah","Hiasan buku sahaja"],a:0,tip:"Lakaran menunjukkan rupa dan idea produk sebelum dibina."},
+{type:"PENILAIAN",visual:"sketch",q:"Mengapakah lakaran perlu dinilai?",o:["Mencari kelemahan dan membuat penambahbaikan","Supaya lebih mahal","Untuk menyalin idea orang lain","Supaya tidak perlu membina"],a:0,tip:"Penilaian membantu kita mengenal pasti kelemahan."},
+{type:"PENAMBAHBAIKAN",visual:"holder",q:"Bekas alat tulis mudah tumbang. Penambahbaikan terbaik ialah...",o:["Lebarkan tapak","Kecilkan tapak","Buang tapak","Tinggikan tanpa sebab"],a:0,tip:"Tapak lebih lebar meningkatkan kestabilan."},
+{type:"BAHAN",visual:"phone",q:"Bahan manakah paling sesuai untuk prototaip pemegang telefon?",o:["Kadbod","Air","Kapas","Daun basah"],a:0,tip:"Pilih bahan yang mudah dibentuk tetapi masih boleh menyokong."},
+{type:"FUNGSI",visual:"product",q:"Produk yang baik mestilah...",o:["Berfungsi dan sesuai dengan keperluan","Cantik sahaja","Mahal","Sangat besar"],a:0,tip:"Produk perlu memenuhi fungsi dan keperluan pengguna."},
+{type:"PROSES",visual:"flow",q:"Yang manakah urutan pembangunan produk yang betul?",o:["Masalah → Idea → Lakaran → Nilai → Bina","Bina → Masalah → Lakaran","Lakaran → Jual → Masalah","Bina → Jual → Idea"],a:0,tip:"Ingat ayat kunci: Masalah, Idea, Lakaran, Nilai, Bina."},
+{type:"PENAMBAHBAIKAN",visual:"phone",q:"Pemegang telefon sering terjatuh ke belakang. Apakah penambahbaikan terbaik?",o:["Tambah sokongan belakang","Buang tapak","Gunakan bahan lebih nipis","Tinggikan tanpa sokongan"],a:0,tip:"Cari perubahan yang menambah kestabilan."},
+{type:"IDEA",visual:"bulb",q:"Mengapakah beberapa idea perlu dihasilkan?",o:["Supaya idea terbaik boleh dipilih","Supaya kerja lebih lama","Supaya bahan habis","Supaya produk mahal"],a:0,tip:"Beberapa idea membolehkan perbandingan dibuat."},
+{type:"BAHAN",visual:"materials",q:"Apakah perkara penting semasa memilih bahan?",o:["Kesesuaian bahan dengan fungsi produk","Warna kegemaran sahaja","Nama bahan","Saiz meja guru"],a:0,tip:"Bahan perlu sesuai dengan fungsi, bentuk dan keselamatan produk."},
+{type:"FUNGSI",visual:"product",q:"Apakah tujuan utama sesuatu produk dihasilkan?",o:["Menyelesaikan masalah atau memenuhi keperluan","Menghabiskan bahan","Hiasan semata-mata","Mendapat markah sahaja"],a:0,tip:"Produk bermula daripada masalah atau keperluan."},
+{type:"CIRI PRODUK",visual:"shield",q:"Antara berikut, manakah ciri produk yang baik?",o:["Selamat, berfungsi dan sesuai dengan pengguna","Berwarna terang sahaja","Mahal sahaja","Besar sahaja"],a:0,tip:"Produk baik perlu selamat dan berfungsi."},
+
+{type:"BOSS 1/5 • MASALAH",visual:"stationery",boss:true,q:"MEGA DRONE: Alat tulis murid berselerak. Apakah masalah yang perlu diselesaikan?",o:["Tiada tempat simpanan teratur","Warna pensel tidak sama","Meja terlalu tinggi","Buku terlalu nipis"],a:0,tip:"Fokus pada sebab alat tulis tidak tersusun."},
+{type:"BOSS 2/5 • PRODUK",visual:"holder",boss:true,q:"MEGA DRONE: Produk manakah paling sesuai untuk masalah alat tulis berselerak?",o:["Organizer meja","Rak kasut","Bekas makanan","Penyangkut tuala"],a:0,tip:"Pilih penyelesaian terus untuk meja belajar."},
+{type:"BOSS 3/5 • LAKARAN",visual:"sketch",boss:true,q:"MEGA DRONE: Apakah tindakan sebelum organizer meja dibina?",o:["Hasilkan lakaran reka bentuk","Terus gam semua bahan","Menjualnya","Membuang idea"],a:0,tip:"Produk dibina berdasarkan lakaran."},
+{type:"BOSS 4/5 • PENAMBAHBAIKAN",visual:"holder",boss:true,q:"MEGA DRONE: Lakaran organizer terlalu sempit. Penambahbaikan terbaik?",o:["Tambah ruang atau kompartmen yang sesuai","Buang semua pembahagi","Kecilkan lagi","Gunakan bahan mudah koyak"],a:0,tip:"Penambahbaikan perlu menjadikan produk lebih berguna."},
+{type:"BOSS 5/5 • BAHAN",visual:"materials",boss:true,q:"MEGA DRONE: Bahan prototaip manakah paling sesuai untuk organizer meja?",o:["Kadbod tebal","Tisu basah","Air","Daun lembut"],a:0,tip:"Pilih bahan yang mudah dibina dan cukup kukuh."}
+];
+
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+const cam=document.getElementById('cam');
+const vis=document.getElementById('visualCanvas'),vctx=vis.getContext('2d');
+
+let W=0,H=0,DPR=1,started=false,useCam=false,camera=null,hands=null,handLm=null,camStream=null,camLoopId=null,processingFrame=false;
+let pointer={x:0,y:0,active:false};
+let qi=0,current=null,drones=[],lock=-1,lockStart=0,lockP=0,lastFire=0;
+let score=0,xp=0,combo=1,maxCombo=1,shots=0,correct=0,team=0,teamScores=[0,0,0,0,0,0];
+let particles=[],beam=null,flash=0,bossHP=5,bossPulse=0,bossIntroDone=false;
+let audioCtx=null,questionReady=false;
+
+function resize(){
+ DPR=Math.max(1,Math.min(2,devicePixelRatio||1));W=innerWidth;H=innerHeight;
+ cv.width=Math.floor(W*DPR);cv.height=Math.floor(H*DPR);cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0)
+}
+addEventListener('resize',resize);resize();
+
+function speak(text){ /* suara dimatikan */ }
+function snd(kind){
+ try{
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const t=audioCtx.currentTime,osc=audioCtx.createOscillator(),g=audioCtx.createGain();osc.connect(g);g.connect(audioCtx.destination);
+  if(kind==="lock"){osc.type="sine";osc.frequency.setValueAtTime(520,t);osc.frequency.exponentialRampToValueAtTime(820,t+.08);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);osc.start(t);osc.stop(t+.11)}
+  if(kind==="fire"){osc.type="sawtooth";osc.frequency.setValueAtTime(300,t);osc.frequency.exponentialRampToValueAtTime(80,t+.18);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);osc.start(t);osc.stop(t+.23)}
+  if(kind==="good"){osc.type="triangle";osc.frequency.setValueAtTime(520,t);osc.frequency.setValueAtTime(660,t+.09);osc.frequency.setValueAtTime(880,t+.18);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.34);osc.start(t);osc.stop(t+.35)}
+  if(kind==="bad"){osc.type="square";osc.frequency.setValueAtTime(160,t);osc.frequency.setValueAtTime(110,t+.1);g.gain.setValueAtTime(.09,t);g.gain.exponentialRampToValueAtTime(.001,t+.24);osc.start(t);osc.stop(t+.25)}
+  if(kind==="boom"){osc.type="sawtooth";osc.frequency.setValueAtTime(120,t);osc.frequency.exponentialRampToValueAtTime(32,t+.45);g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+.46);osc.start(t);osc.stop(t+.47)}
+ }catch(e){}
+}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function makeTeams(){
+ const el=document.getElementById('teamSelect');el.innerHTML='';
+ TEAM_NAMES.forEach((name,i)=>{
+  const b=document.createElement('button');b.className='btn teamBtn'+(i===0?' selected':'');b.innerHTML=`<div>KUMPULAN ${i+1}</div><div class="small">${name}</div>`;
+  b.onclick=()=>{team=i;[...el.children].forEach((x,j)=>x.classList.toggle('selected',j===i));renderTeams()};el.appendChild(b)
+ })
+}
+function initProgress(){const p=document.getElementById('progress');p.innerHTML='';for(let i=0;i<Q.length;i++){const n=document.createElement('span');n.className='node';p.appendChild(n)}}
+function updateProgress(){[...document.querySelectorAll('.node')].forEach((n,i)=>n.classList.toggle('done',i<qi));document.getElementById('qnum').textContent=`MISSION ${Math.min(qi+1,Q.length)} / ${Q.length}`}
+function renderTeams(){
+ const el=document.getElementById('teamRows');el.innerHTML='';
+ TEAM_NAMES.forEach((name,i)=>{const d=document.createElement('div');d.className='teamrow'+(i===team?' active':'');d.innerHTML=`<span>${i+1}. ${name}</span><b>${teamScores[i]}</b>`;el.appendChild(d)})
+}
+function hud(){document.getElementById('score').textContent=score;document.getElementById('xp').textContent=xp;document.getElementById('combo').textContent='×'+combo;renderTeams()}
+function ai(t,voice=false){document.getElementById('aiText').textContent=t}
+function toast(text,good=true){const e=document.getElementById('toast');e.innerHTML=text;e.style.display='block';e.style.borderColor=good?'rgba(114,248,255,.76)':'rgba(255,83,112,.8)';setTimeout(()=>e.style.display='none',1100)}
+
+async function countdown(){
+ questionReady=false;
+ const wrap=document.getElementById('countdown'),txt=document.getElementById('countText');wrap.style.display='flex';
+ for(const n of ['3','2','1','GO!']){
+  txt.textContent=n;snd(n==='GO!'?'good':'lock');
+  await new Promise(r=>setTimeout(r,n==='GO!'?500:650))
+ }
+ wrap.style.display='none';questionReady=true;
+ ai("Sasaran aktif. Pilih jawapan paling tepat.",true)
+}
+async function teamSplash(){
+ const el=document.getElementById('teamTurn');document.getElementById('teamTurnText').textContent=`KUMPULAN ${team+1} • ${TEAM_NAMES[team]}`;el.style.display='flex';
+ 
+ await new Promise(r=>setTimeout(r,1000));el.style.display='none';await countdown()
+}
+
+function start(cameraMode){
+ useCam=cameraMode;started=true;score=0;xp=0;combo=1;maxCombo=1;shots=0;correct=0;teamScores=[0,0,0,0,0,0];qi=0;bossHP=5;bossIntroDone=false;
+ document.getElementById('startModal').style.display='none';document.getElementById('victoryModal').style.display='none';document.getElementById('modeText').textContent=cameraMode?'AR KAMERA + TANGAN':'MOUSE';
+ initProgress();hud();newQ();if(cameraMode)initCamera()
+}
+document.getElementById('startMouse').onclick=()=>start(false);
+document.getElementById('startCam').onclick=()=>start(true);
+document.getElementById('restart').onclick=()=>start(useCam);
+document.getElementById('home').onclick=()=>{stopCamera();started=false;document.getElementById('victoryModal').style.display='none';document.getElementById('startModal').style.display='flex'};
+
+function newQ(){
+ if(qi>=Q.length){win();return}
+ current=Q[qi];document.getElementById('question').textContent=current.q;document.getElementById('typeText').textContent=current.type;updateProgress();
+ const boss=!!current.boss;document.getElementById('bossHud').style.display=boss?'block':'none';
+ if(boss){document.getElementById('hearts').textContent='❤️'.repeat(bossHP)+'🖤'.repeat(5-bossHP);bossPulse=1}
+ drawVisual(current.visual);
+ const opts=shuffle(current.o.map((text,idx)=>({text,idx})));
+ const cx=W/2,cy=H/2+40,rx=Math.min(W*.31,390),ry=Math.min(H*.23,205);
+ drones=opts.map((o,i)=>{
+   const a=(Math.PI*2/opts.length)*i-Math.PI/2;
+   const tx=cx+Math.cos(a)*rx,ty=cy+Math.sin(a)*ry;
+   return{x:i%2===0?-320:W+320,y:ty,tx,ty,w:Math.min(275,W*.29),h:92,text:o.text,idx:o.idx,phase:Math.random()*6.28,hit:0,arrive:0}
+ });
+ lock=-1;lockP=0;questionReady=false;
+ if(boss&&!bossIntroDone){bossIntroDone=true;ai("Amaran! Mega Drone dikesan. Lima teras perlu dimusnahkan!",true)}
+ setTimeout(()=>teamSplash(),boss?1200:300)
+}
+function roundRect(c,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+rr,y);c.arcTo(x+w,y,x+w,y+h,rr);c.arcTo(x+w,y+h,x,y+h,rr);c.arcTo(x,y+h,x,y,rr);c.arcTo(x,y,x+w,y,rr);c.closePath()}
+function wrap(text,max,context=ctx){const ws=text.split(' '),ls=[];let l='';for(const w of ws){const t=l?l+' '+w:w;if(context.measureText(t).width>max&&l){ls.push(l);l=w}else l=t}if(l)ls.push(l);return ls.slice(0,3)}
+
+function drawVisual(kind){
+ const c=vctx,w=vis.width,h=vis.height;c.clearRect(0,0,w,h);c.fillStyle='#071626';c.fillRect(0,0,w,h);c.strokeStyle='rgba(114,248,255,.22)';
+ for(let x=0;x<w;x+=30){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}for(let y=0;y<h;y+=30){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+ c.lineWidth=4;c.strokeStyle='#72f8ff';
+ if(kind==="books"){for(let i=0;i<4;i++)c.strokeRect(100+i*42,92-i*7,38,58+i*4);c.fillStyle='#ffc95d';c.font='bold 24px Arial';c.fillText('BUKU BERSERAK',120,40)}
+ else if(kind==="stationery"){c.strokeRect(150,74,140,86);for(let i=0;i<4;i++){c.beginPath();c.moveTo(178+i*27,74);c.lineTo(172+i*30,28);c.stroke()}c.fillStyle='#ffc95d';c.font='bold 22px Arial';c.fillText('ALAT TULIS',160,181)}
+ else if(kind==="phone"){c.strokeRect(178,34,92,128);c.beginPath();c.moveTo(150,166);c.lineTo(295,166);c.lineTo(270,118);c.stroke();c.fillStyle='#ffc95d';c.font='bold 20px Arial';c.fillText('PEMEGANG TELEFON',96,24)}
+ else if(kind==="holder"){c.strokeRect(125,64,190,98);for(let i=1;i<4;i++){c.beginPath();c.moveTo(125+i*47.5,64);c.lineTo(125+i*47.5,162);c.stroke()}c.fillStyle='#ffc95d';c.font='bold 20px Arial';c.fillText('ORGANIZER',160,38)}
+ else if(kind==="flow"){const xs=[12,100,188,276,364],labs=['MASALAH','IDEA','LAKAR','NILAI','BINA'];c.font='bold 12px Arial';labs.forEach((t,i)=>{roundRect(c,xs[i],78,68,38,9);c.stroke();c.fillStyle='#effcff';c.fillText(t,xs[i]+6,102);if(i<4){c.strokeStyle='#ffc95d';c.beginPath();c.moveTo(xs[i]+69,97);c.lineTo(xs[i+1]-4,97);c.stroke();c.strokeStyle='#72f8ff'}})}
+ else if(kind==="bulb"){c.beginPath();c.arc(220,78,43,0,Math.PI*2);c.stroke();c.strokeRect(200,118,40,30);for(let a=0;a<8;a++){let an=a*Math.PI/4;c.beginPath();c.moveTo(220+Math.cos(an)*58,78+Math.sin(an)*58);c.lineTo(220+Math.cos(an)*77,78+Math.sin(an)*77);c.stroke()}c.fillStyle='#ffc95d';c.font='bold 20px Arial';c.fillText('JANA IDEA',170,180)}
+ else if(kind==="sketch"){c.setLineDash([7,5]);c.strokeRect(120,45,200,115);c.beginPath();c.moveTo(135,145);c.lineTo(180,80);c.lineTo(255,115);c.lineTo(305,60);c.stroke();c.setLineDash([]);c.fillStyle='#ffc95d';c.font='bold 20px Arial';c.fillText('LAKARAN',172,28)}
+ else if(kind==="materials"){['KADBOD','STRAW','STIK','CAWAN'].forEach((t,i)=>{roundRect(c,20+i*103,70,84,60,10);c.stroke();c.fillStyle='#effcff';c.font='bold 12px Arial';c.fillText(t,29+i*103,105)})}
+ else if(kind==="shield"){c.beginPath();c.moveTo(220,35);c.lineTo(300,65);c.lineTo(285,125);c.quadraticCurveTo(220,177,155,125);c.lineTo(140,65);c.closePath();c.stroke();c.fillStyle='#ffc95d';c.font='bold 18px Arial';c.fillText('SELAMAT',180,105)}
+ else {c.strokeRect(125,55,190,105);c.fillStyle='#ffc95d';c.font='bold 24px Arial';c.fillText('PRODUK',170,115)}
+}
+
+cv.addEventListener('mousemove',e=>{if(!useCam){pointer.x=e.clientX;pointer.y=e.clientY;pointer.active=true}});
+cv.addEventListener('mouseleave',()=>{if(!useCam)pointer.active=false});
+cv.addEventListener('click',e=>{if(started&&!useCam&&questionReady){const i=hit(e.clientX,e.clientY);if(i>=0)fire(i)}});
+
+function hit(x,y){for(let i=0;i<drones.length;i++){const d=drones[i];if(x>d.x-d.w/2&&x<d.x+d.w/2&&y>d.y-d.h/2&&y<d.y+d.h/2)return i}return -1}
+function fire(i){
+ if(!questionReady)return;
+ const now=performance.now();if(now-lastFire<520)return;lastFire=now;snd("fire");shots++;
+ const d=drones[i];beam={x1:pointer.x||W/2,y1:pointer.y||H*.82,x2:d.x,y2:d.y,t:0};
+ if(d.idx===current.a){
+   questionReady=false;correct++;const gain=100*combo;score+=gain;xp+=100;teamScores[team]+=100;combo=Math.min(5,combo+1);maxCombo=Math.max(maxCombo,combo);explode(d.x,d.y);snd(current.boss?"boom":"good");
+   if(current.boss){bossHP=Math.max(0,bossHP-1);document.getElementById('hearts').textContent='❤️'.repeat(bossHP)+'🖤'.repeat(5-bossHP)}
+   toast(current.boss?`💥 TERAS BOSS ROSAK!<br><span style="font-size:.55em">+${gain} SCORE</span>`:`✅ BETUL!<br><span style="font-size:.55em">+${gain} SCORE</span>`,true);
+   ai(current.boss?"Tepat! Satu teras Mega Drone berjaya dimusnahkan.":"Hebat! Jawapan tepat. Data RBT berjaya dipulihkan.",true);hud();
+   setTimeout(()=>{qi++;team=(team+1)%6;newQ()},1200)
+ }else{
+   combo=1;flash=1;snd("bad");toast("❌ BUKAN SASARAN",false);ai("Cuba lagi. "+current.tip,true);hud()
+ }
+}
+function explode(x,y){for(let i=0;i<58;i++)particles.push({x,y,vx:(Math.random()-.5)*12,vy:(Math.random()-.5)*12,life:1,size:2+Math.random()*6})}
+
+async function initCamera(){
+ const lm=document.getElementById('loadingModal'),
+       fill=document.getElementById('loadingFill'),
+       lt=document.getElementById('loadingText'),
+       camStatus=document.getElementById('camStatusText'),
+       mpStatus=document.getElementById('mpStatusText'),
+       handStatus=document.getElementById('handStatusText');
+
+ lm.style.display='flex';
+ fill.style.width='8%';
+ camStatus.textContent='KAMERA: MEMINTA KEBENARAN...';
+ mpStatus.textContent='MEDIAPIPE: MENUNGGU...';
+ handStatus.textContent='TANGAN: BELUM DIKESAN';
+
+ try{
+   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+     throw new Error('Browser tidak menyediakan akses kamera. Buka game melalui HTTPS atau localhost.');
+   }
+
+   lt.textContent='Meminta akses kamera...';
+   camStream=await navigator.mediaDevices.getUserMedia({
+     video:{
+       facingMode:'user',
+       width:{ideal:1280},
+       height:{ideal:720},
+       frameRate:{ideal:30,max:30}
+     },
+     audio:false
+   });
+
+   cam.srcObject=camStream;
+   cam.style.display='block';
+   await cam.play();
+
+   camStatus.textContent='KAMERA: AKTIF ✓';
+   camStatus.style.color='#72f8ff';
+   fill.style.width='35%';
+
+   lt.textContent='Memuatkan MediaPipe Hands...';
+   hands=new Hands({
+     locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+   });
+
+   hands.setOptions({
+     maxNumHands:1,
+     modelComplexity:1,
+     minDetectionConfidence:0.35,
+     minTrackingConfidence:0.35
+   });
+
+   hands.onResults(onHand);
+
+   mpStatus.textContent='MEDIAPIPE: AKTIF ✓';
+   mpStatus.style.color='#72f8ff';
+   fill.style.width='72%';
+
+   lt.textContent='Menguji pengesanan tapak tangan...';
+
+   const processFrame=async()=>{
+     if(!useCam || !hands || !camStream) return;
+     camLoopId=requestAnimationFrame(processFrame);
+
+     if(processingFrame || cam.readyState<2) return;
+     processingFrame=true;
+     try{
+       await hands.send({image:cam});
+     }catch(err){
+       mpStatus.textContent='MEDIAPIPE: RALAT';
+       mpStatus.style.color='#ff95a5';
+     }finally{
+       processingFrame=false;
+     }
+   };
+
+   processFrame();
+
+   fill.style.width='100%';
+   lt.textContent='Cyber Vision aktif. Angkat satu tapak tangan di depan kamera.';
+   ai('Angkat satu tapak tangan di depan kamera sehingga status TANGAN DIKESAN muncul.');
+   setTimeout(()=>lm.style.display='none',850);
+
+ }catch(e){
+   console.error(e);
+   lm.style.display='none';
+   useCam=false;
+   cam.style.display='none';
+   document.getElementById('modeText').textContent='MOUSE (FALLBACK)';
+   camStatus.textContent='KAMERA: GAGAL';
+   camStatus.style.color='#ff95a5';
+   mpStatus.textContent='MEDIAPIPE: TIDAK AKTIF';
+   mpStatus.style.color='#ff95a5';
+   handStatus.textContent='TANGAN: TIDAK AKTIF';
+   handStatus.style.color='#ff95a5';
+
+   const reason=(location.protocol==='file:')
+     ? 'Jika kamera tidak keluar, upload game ke GitHub Pages dan buka melalui pautan https.'
+     : 'Semak kebenaran kamera pada Chrome dan muat semula halaman.';
+   ai('Mod tapak tangan tidak dapat dimulakan. '+reason);
+ }
+}
+
+function stopCamera(){
+ try{
+   if(camLoopId) cancelAnimationFrame(camLoopId);
+ }catch(e){}
+ camLoopId=null;
+ processingFrame=false;
+
+ try{
+   if(camStream) camStream.getTracks().forEach(t=>t.stop());
+ }catch(e){}
+ camStream=null;
+
+ try{
+   if(cam.srcObject) cam.srcObject.getTracks().forEach(t=>t.stop());
+ }catch(e){}
+ cam.srcObject=null;
+
+ hands=null;
+ handLm=null;
+ pointer.active=false;
+ cam.style.display='none';
+}
+
+function drawBG(t){
+ ctx.clearRect(0,0,W,H);ctx.save();ctx.strokeStyle='rgba(96,229,255,.06)';ctx.lineWidth=1;const hy=H*.73;
+ for(let y=hy;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+ for(let x=0;x<W;x+=65){ctx.beginPath();ctx.moveTo(W/2,hy);ctx.lineTo(x,H);ctx.stroke()}
+ for(let i=0;i<48;i++){const x=(i*149+t*.018)%W,y=(i*83+t*.009)%H;ctx.fillStyle='rgba(114,248,255,.24)';ctx.fillRect(x,y,2,2)}ctx.restore()
+}
+function updateDroneMotion(d){
+ if(d.arrive<1){d.arrive=Math.min(1,d.arrive+.028);const ease=1-Math.pow(1-d.arrive,3);d.x=d.x+(d.tx-d.x)*ease*.08}
+ else d.x+=(d.tx-d.x)*.08;
+}
+function drawDrone(d,i,t){
+ updateDroneMotion(d);
+ const bob=Math.sin(t*.002+d.phase)*8,x=d.x,y=d.y+bob,w=d.w,h=d.h;ctx.save();ctx.translate(x,y);
+ ctx.shadowBlur=30;ctx.shadowColor=i===lock?'rgba(255,240,122,.78)':'rgba(70,225,255,.52)';
+ const grad=ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);grad.addColorStop(0,'rgba(24,52,80,.97)');grad.addColorStop(.48,'rgba(10,27,49,.97)');grad.addColorStop(1,'rgba(31,23,69,.97)');
+ ctx.fillStyle=grad;ctx.strokeStyle=i===lock?'#fff07a':'#68f3ff';ctx.lineWidth=i===lock?3:1.6;roundRect(ctx,-w/2,-h/2,w,h,18);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+ for(const sy of [-1,1])for(const sx of [-1,1]){
+   ctx.strokeStyle='rgba(143,98,255,.85)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(sx*w*.28,sy*h*.22);ctx.lineTo(sx*w*.49,sy*h*.52);ctx.stroke();
+   ctx.strokeStyle='rgba(114,248,255,.75)';ctx.beginPath();ctx.ellipse(sx*w*.5,sy*h*.54,20,6,0,0,Math.PI*2);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(sx*w*.59,sy*h*.54);ctx.lineTo(sx*w*.41,sy*h*.54);ctx.stroke()
+ }
+ let rg=ctx.createRadialGradient(0,0,2,0,0,19);rg.addColorStop(0,'#fff');rg.addColorStop(.25,'#72f8ff');rg.addColorStop(1,'rgba(114,248,255,0)');ctx.fillStyle=rg;ctx.beginPath();ctx.arc(0,0,19,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='rgba(3,11,21,.68)';roundRect(ctx,-w*.42,-h*.31,w*.84,h*.62,12);ctx.fill();
+ ctx.fillStyle='#f3feff';ctx.font=`800 ${Math.max(14,Math.min(20,w/12))}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';
+ const lines=wrap(d.text,w*.72);lines.forEach((ln,k)=>ctx.fillText(ln,0,(k-(lines.length-1)/2)*20));
+ if(i===lock){
+   ctx.strokeStyle='#fff07a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,Math.max(w,h)*.35,0,Math.PI*2*lockP);ctx.stroke();
+   ctx.fillStyle='#fff07a';ctx.font='900 12px Arial';ctx.fillText(lockP>=1?'FIRE!':`TARGET LOCK ${Math.round(lockP*100)}%`,0,h/2+31)
+ }
+ ctx.restore()
+}
+function drawBoss(t){
+ if(!current||!current.boss)return;
+ const x=W/2,y=H*.42;bossPulse*=.965;ctx.save();ctx.translate(x,y);
+ const scale=1+bossPulse*.08+Math.sin(t*.002)*.015;ctx.scale(scale,scale);
+ ctx.shadowBlur=60;ctx.shadowColor='rgba(255,83,112,.72)';
+ ctx.fillStyle='rgba(58,12,32,.54)';ctx.strokeStyle='#ff6079';ctx.lineWidth=4;
+ const bw=Math.min(W*.72,820),bh=Math.min(H*.48,400);
+ ctx.beginPath();ctx.moveTo(-bw*.48,-bh*.1);ctx.lineTo(-bw*.34,-bh*.35);ctx.lineTo(-bw*.1,-bh*.48);ctx.lineTo(0,-bh*.42);ctx.lineTo(bw*.1,-bh*.48);ctx.lineTo(bw*.34,-bh*.35);ctx.lineTo(bw*.48,-bh*.1);ctx.lineTo(bw*.42,bh*.22);ctx.lineTo(bw*.18,bh*.42);ctx.lineTo(0,bh*.5);ctx.lineTo(-bw*.18,bh*.42);ctx.lineTo(-bw*.42,bh*.22);ctx.closePath();ctx.fill();ctx.stroke();
+ // wings
+ ctx.strokeStyle='rgba(143,98,255,.95)';ctx.lineWidth=5;
+ ctx.beginPath();ctx.moveTo(-bw*.28,-bh*.15);ctx.lineTo(-bw*.62,-bh*.36);ctx.lineTo(-bw*.72,-bh*.18);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(bw*.28,-bh*.15);ctx.lineTo(bw*.62,-bh*.36);ctx.lineTo(bw*.72,-bh*.18);ctx.stroke();
+ // cores
+ for(let i=0;i<5;i++){const a=-Math.PI*.82+i*(Math.PI*1.64/4),r=Math.min(bw,bh)*.32;const hx=Math.cos(a)*r,hy=Math.sin(a)*r;ctx.fillStyle=i<bossHP?'#ff5370':'#283341';ctx.shadowBlur=i<bossHP?25:0;ctx.shadowColor='#ff5370';ctx.beginPath();ctx.arc(hx,hy,14,0,Math.PI*2);ctx.fill()}
+ // main eye
+ ctx.shadowBlur=35;ctx.shadowColor='#ffc95d';ctx.fillStyle='#ffc95d';ctx.beginPath();ctx.ellipse(0,0,55,20,0,0,Math.PI*2);ctx.fill();
+ ctx.restore()
+}
+function drawGauntlet(){
+ if(!pointer.active)return;
+ ctx.save();ctx.shadowBlur=18;ctx.shadowColor='#72f8ff';
+ if(useCam&&handLm){
+  ctx.strokeStyle='rgba(114,248,255,.9)';ctx.lineWidth=3;
+  [[0,5,9,13,17,0],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20],[1,2,3,4]].forEach(chain=>{
+    ctx.beginPath();chain.forEach((id,j)=>{const p=handLm[id],x=(1-p.x)*W,y=p.y*H;if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke()
+  })
+ }
+ ctx.translate(pointer.x,pointer.y);
+ ctx.strokeStyle='#72f8ff';ctx.lineWidth=3;
+ ctx.beginPath();ctx.arc(0,0,29,0,Math.PI*2);ctx.stroke();
+ ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.stroke();
+ // central aiming crosshair
+ ctx.beginPath();ctx.moveTo(-38,0);ctx.lineTo(-18,0);ctx.moveTo(18,0);ctx.lineTo(38,0);ctx.moveTo(0,-38);ctx.lineTo(0,-18);ctx.moveTo(0,18);ctx.lineTo(0,38);ctx.stroke();
+ ctx.strokeStyle='#8f62ff';for(let a=0;a<8;a++){let ang=a*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(ang)*33,Math.sin(ang)*33);ctx.lineTo(Math.cos(ang)*47,Math.sin(ang)*47);ctx.stroke()}ctx.restore()
+}
+function updateLock(now){
+ if(!started||!questionReady||!pointer.active){lock=-1;lockP=0;return}
+ const i=hit(pointer.x,pointer.y);if(i<0){lock=-1;lockP=0;return}
+ if(lock!==i){lock=i;lockStart=now;lockP=0;snd("lock");ai("Target Lock. Kekalkan tapak tangan pada sasaran.")}
+ else{lockP=Math.min(1,(now-lockStart)/750);if(lockP>=1){lockP=0;lockStart=now+650;fire(i)}}
+}
+function effects(){
+ if(beam){beam.t+=.12;ctx.save();ctx.strokeStyle=`rgba(114,248,255,${1-beam.t})`;ctx.lineWidth=9;ctx.shadowBlur=28;ctx.shadowColor='#72f8ff';ctx.beginPath();ctx.moveTo(beam.x1,beam.y1);ctx.lineTo(beam.x2,beam.y2);ctx.stroke();ctx.restore();if(beam.t>=1)beam=null}
+ particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=.026;ctx.fillStyle=`rgba(114,248,255,${p.life})`;ctx.fillRect(p.x,p.y,p.size,p.size)});particles=particles.filter(p=>p.life>0);
+ if(flash>0){ctx.fillStyle=`rgba(255,55,85,${flash*.17})`;ctx.fillRect(0,0,W,H);flash-=.075}
+}
+function loop(t){drawBG(t);if(started){drawBoss(t);updateLock(t);drones.forEach((d,i)=>drawDrone(d,i,t));drawGauntlet();effects()}requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+
+function win(){
+ started=false;questionReady=false;document.getElementById('bossHud').style.display='none';
+ const acc=shots?Math.round(correct/shots*100):0,stars=acc>=80?3:acc>=60?2:1;
+ document.getElementById('finalScore').textContent=score;document.getElementById('finalXP').textContent=xp;document.getElementById('finalCombo').textContent='×'+maxCombo;document.getElementById('finalAcc').textContent=acc+'%';document.getElementById('stars').textContent='⭐'.repeat(stars);
+ document.getElementById('victoryModal').style.display='flex';snd("good");
+}
+
+makeTeams();initProgress();renderTeams();hud();drawVisual('flow');
+</script>
+</body>
+</html>
