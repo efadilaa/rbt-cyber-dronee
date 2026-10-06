@@ -4,7 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RBT Cyber Drone V3 — Tahun 6 Unit 3</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com">
+setTimeout(()=>{
+ const secure=window.isSecureContext;
+ if(!secure){
+   showCameraDiag('AMARAN: Halaman ini bukan Secure Context. Pastikan alamat bermula dengan https://',false);
+ }
+},500);
+
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <style>
@@ -175,7 +183,17 @@ button{font:inherit}
     </div>
   </div>
 
-  <div id="loadingModal" class="modal" style="display:none">
+  
+  <div id="cameraDiag" class="glass" style="position:absolute;left:50%;bottom:92px;transform:translateX(-50%);z-index:35;width:min(760px,92vw);padding:12px 14px;border-radius:16px;display:none">
+    <div class="font-black">📷 DIAGNOSIS KAMERA</div>
+    <div id="cameraDiagText" class="small mt-1">Belum diuji.</div>
+    <div class="mt-2 flex gap-2 flex-wrap">
+      <button id="retryCameraBtn" class="btn" type="button">🔄 CUBA KAMERA SEMULA</button>
+      <button id="testCameraBtn" class="btn alt" type="button">🧪 UJI KAMERA SAHAJA</button>
+    </div>
+  </div>
+
+<div id="loadingModal" class="modal" style="display:none">
     <div class="panel glass text-center">
       <div class="subtitle neon">CONNECTING TO RBT CYBER VISION...</div>
       <div id="loadingText" class="mt-3">Mengaktifkan pengesanan tangan...</div>
@@ -301,6 +319,8 @@ function start(cameraMode){
  document.getElementById('startModal').style.display='none';document.getElementById('victoryModal').style.display='none';document.getElementById('modeText').textContent=cameraMode?'AR KAMERA + TANGAN':'MOUSE';
  initProgress();hud();newQ();if(cameraMode)initCamera()
 }
+document.getElementById('retryCameraBtn').onclick=async()=>{useCam=true;document.getElementById('modeText').textContent='AR KAMERA + TANGAN';await initCamera();};
+document.getElementById('testCameraBtn').onclick=quickCameraTest;
 document.getElementById('startMouse').onclick=()=>start(false);
 document.getElementById('startCam').onclick=()=>start(true);
 document.getElementById('restart').onclick=()=>start(useCam);
@@ -363,6 +383,51 @@ function fire(i){
 }
 function explode(x,y){for(let i=0;i<58;i++)particles.push({x,y,vx:(Math.random()-.5)*12,vy:(Math.random()-.5)*12,life:1,size:2+Math.random()*6})}
 
+
+function showCameraDiag(msg, good=false){
+ const box=document.getElementById('cameraDiag');
+ const txt=document.getElementById('cameraDiagText');
+ if(!box||!txt)return;
+ box.style.display='block';
+ txt.textContent=msg;
+ txt.style.color=good?'#72f8ff':'#ff95a5';
+}
+
+function cameraErrorMessage(e){
+ const name=(e&&e.name)||'UnknownError';
+ const msg=(e&&e.message)||'';
+ if(name==='NotAllowedError' || name==='SecurityError'){
+   return `AKSES KAMERA DITOLAK (${name}). Klik ikon kamera/kunci di bar alamat Chrome → Site settings → Camera → Allow, kemudian refresh halaman.`;
+ }
+ if(name==='NotFoundError' || name==='DevicesNotFoundError'){
+   return `KAMERA TIDAK DIJUMPAI (${name}). Pastikan webcam disambung dan Windows dapat mengesannya.`;
+ }
+ if(name==='NotReadableError' || name==='TrackStartError'){
+   return `KAMERA SEDANG DIGUNAKAN / TIDAK BOLEH DIBACA (${name}). Tutup Zoom, Teams, Meet atau aplikasi kamera lain, kemudian cuba semula.`;
+ }
+ if(name==='OverconstrainedError' || name==='ConstraintNotSatisfiedError'){
+   return `TETAPAN KAMERA TIDAK SESUAI (${name}). Game akan cuba resolusi lebih rendah.`;
+ }
+ return `RALAT KAMERA: ${name}${msg?` — ${msg}`:''}`;
+}
+
+async function quickCameraTest(){
+ showCameraDiag('Sedang menguji kamera...');
+ try{
+   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+     throw new Error('getUserMedia tidak tersedia. Pastikan laman dibuka melalui https://');
+   }
+   const s=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+   const tracks=s.getTracks();
+   tracks.forEach(t=>t.stop());
+   showCameraDiag('KAMERA BERJAYA DIAKSES ✓ — browser membenarkan webcam.', true);
+   return true;
+ }catch(e){
+   showCameraDiag(cameraErrorMessage(e), false);
+   return false;
+ }
+}
+
 async function initCamera(){
  const lm=document.getElementById('loadingModal'),
        fill=document.getElementById('loadingFill'),
@@ -383,15 +448,23 @@ async function initCamera(){
    }
 
    lt.textContent='Meminta akses kamera...';
-   camStream=await navigator.mediaDevices.getUserMedia({
-     video:{
-       facingMode:'user',
-       width:{ideal:1280},
-       height:{ideal:720},
-       frameRate:{ideal:30,max:30}
-     },
-     audio:false
-   });
+   try{
+     camStream=await navigator.mediaDevices.getUserMedia({
+       video:{
+         facingMode:'user',
+         width:{ideal:1280},
+         height:{ideal:720},
+         frameRate:{ideal:30,max:30}
+       },
+       audio:false
+     });
+   }catch(firstErr){
+     if(firstErr && (firstErr.name==='OverconstrainedError'||firstErr.name==='ConstraintNotSatisfiedError')){
+       camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+     }else{
+       throw firstErr;
+     }
+   }
 
    cam.srcObject=camStream;
    cam.style.display='block';
@@ -457,10 +530,9 @@ async function initCamera(){
    handStatus.textContent='TANGAN: TIDAK AKTIF';
    handStatus.style.color='#ff95a5';
 
-   const reason=(location.protocol==='file:')
-     ? 'Jika kamera tidak keluar, upload game ke GitHub Pages dan buka melalui pautan https.'
-     : 'Semak kebenaran kamera pada Chrome dan muat semula halaman.';
-   ai('Mod tapak tangan tidak dapat dimulakan. '+reason);
+   const diagnostic=cameraErrorMessage(e);
+   showCameraDiag(diagnostic,false);
+   ai('Kamera tidak dapat diaktifkan. Lihat kotak Diagnosis Kamera di bawah.');
  }
 }
 
