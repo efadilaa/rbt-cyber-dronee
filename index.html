@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RBT Cyber Drone V3.8 HAND FIX — Tahun 6 Unit 3</title>
+<title>RBT Cyber Drone V4 — 3 Tahap + Sistem Rebutan</title>
 <script src="https://cdn.tailwindcss.com">
 
 </script>
@@ -76,6 +76,21 @@ button{font:inherit}
  #bossHud{top:90px;width:88vw}
  .grid3{grid-template-columns:1fr 1fr}
 }
+
+.levelGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.levelBtn{min-height:105px;text-align:left}
+.levelBtn.selected{outline:3px solid var(--cyan);box-shadow:0 0 28px rgba(114,248,255,.26)}
+.levelWeak{border-color:rgba(98,255,150,.55)!important}
+.levelMid{border-color:rgba(255,214,92,.55)!important}
+.levelSmart{border-color:rgba(255,102,120,.55)!important}
+.levelTag{font-size:12px;font-weight:1000;letter-spacing:.08em}
+.rankNo{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(114,248,255,.12);margin-right:5px}
+.rankMeta{font-size:10px;opacity:.72;margin-left:27px}
+#stealBanner{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:48;display:none;width:min(720px,90vw);padding:22px;border-radius:22px;text-align:center}
+#stealTitle{font-size:clamp(28px,5vw,58px);font-weight:1000;color:var(--amber);text-shadow:0 0 18px rgba(255,201,93,.55)}
+#levelBadge{position:absolute;left:18px;top:280px;z-index:24;padding:8px 11px;border-radius:14px;font-size:12px}
+@media(max-width:830px){.levelGrid{grid-template-columns:1fr}#levelBadge{top:255px}}
+
 </style>
 </head>
 <body>
@@ -86,7 +101,7 @@ button{font:inherit}
 
   <div class="hud">
     <div class="hudBox glass side">
-      <div class="small">RBT CYBER LAB • TAHUN 6 • <b style="color:#ffc95d">V3.8 HAND FIX</b></div>
+      <div class="small">RBT CYBER LAB • TAHUN 6 • <b style="color:#ffc95d">V4 • 3 TAHAP + REBUTAN</b></div>
       <div class="font-black">UNIT 3: PEMBANGUNAN PRODUK</div>
       <div id="progress"></div>
     </div>
@@ -108,9 +123,10 @@ button{font:inherit}
     ✋ <b id="handStatusText">TANGAN: BELUM DIKESAN</b>
   </div>
   <div id="missionType" class="glass">🎯 <b id="typeText">RBT CYBER MISSION</b><br><span class="small">HALAKAN TAPAK TANGAN KE DRONE & TAHAN 0.75 SAAT</span></div>
+  <div id="levelBadge" class="glass">🟢 <b id="levelText">TAHAP LEMAH • +100</b></div>
 
   <div id="teamPanel" class="glass">
-    <div class="font-black mb-1">6 PASUKAN RBT</div>
+    <div class="font-black mb-1">🏆 RANKING LANGSUNG</div>
     <div id="teamRows"></div>
   </div>
 
@@ -147,12 +163,18 @@ button{font:inherit}
     <div id="countText">3</div>
   </div>
 
+  <div id="stealBanner" class="glass">
+    <div id="stealTitle">⚡ REBUT PELUANG!</div>
+    <div id="stealTeam" class="subtitle neon mt-2">KUMPULAN 2 • CYBER PEREKA</div>
+    <div id="stealInfo" class="mt-2">Peluang rebutan 1 daripada 2</div>
+  </div>
+
   <div id="startModal" class="modal">
     <div class="panel glass">
-      <div class="kicker">HAND TRACKING CONFIRMED EDITION • WEB AR • RBT TAHUN 6</div>
-      <div class="title neon mt-2">RBT CYBER DRONE V3.8 HAND FIX</div>
-      <div class="subtitle mt-4">Misi Pembangunan Produk</div>
-      <p class="mt-4 text-lg">Versi ini direka untuk kelas: kamera murid menjadi latar AR, drone masuk dari tepi, countdown setiap giliran, enam pasukan khas dan Final Boss bersaiz besar.</p>
+      <div class="kicker">3 TAHAP • SISTEM REBUTAN • HAND TRACKING • WEB AR • RBT TAHUN 6</div>
+      <div class="title neon mt-2">RBT CYBER DRONE V4 • 3 TAHAP + REBUTAN</div>
+      <div class="subtitle mt-4">Misi Pembangunan Produk • 3 Tahap + Rebutan</div>
+      <p class="mt-4 text-lg">Guru pilih tahap Lemah, Sederhana atau Pandai. Jika kumpulan pertama salah, soalan dibuka kepada kumpulan lain melalui sistem REBUT PELUANG sehingga maksimum dua rebutan.</p>
 
       <div class="grid3 mt-5">
         <div class="infoCard glass">✋ <b>OPEN PALM</b><div class="small mt-1">Buka tapak tangan.</div></div>
@@ -161,12 +183,34 @@ button{font:inherit}
       </div>
 
       <div class="mt-5">
-        <div class="font-black mb-2">PILIH PASUKAN YANG MULA</div>
+        <div class="font-black mb-2">1. PILIH TAHAP SOALAN</div>
+        <div class="levelGrid" id="levelSelect">
+          <button class="btn levelBtn levelWeak selected" data-level="lemah">
+            <div class="levelTag">🟢 TAHAP LEMAH</div>
+            <div class="mt-1">Soalan asas & pengenalan</div>
+            <div class="small mt-1">+100 mata setiap jawapan betul</div>
+          </button>
+          <button class="btn levelBtn levelMid" data-level="sederhana">
+            <div class="levelTag">🟡 TAHAP SEDERHANA</div>
+            <div class="mt-1">Aplikasi dalam situasi</div>
+            <div class="small mt-1">+200 mata setiap jawapan betul</div>
+          </button>
+          <button class="btn levelBtn levelSmart" data-level="pandai">
+            <div class="levelTag">🔴 TAHAP PANDAI</div>
+            <div class="mt-1">Analisis & penambahbaikan</div>
+            <div class="small mt-1">+300 mata setiap jawapan betul</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="font-black mb-2">2. PILIH PASUKAN YANG MULA</div>
         <div class="grid3" id="teamSelect"></div>
       </div>
 
       <div class="mt-5 p-4 rounded-xl" style="background:rgba(255,201,93,.08);border:1px solid rgba(255,201,93,.23)">
-        <b>Ayat kunci:</b> “Kita tidak terus bina. Kita fikir masalah, cari idea, buat lakaran, nilai dan barulah bina.”
+        <b>Sistem markah:</b> 🟢 Lemah +100 • 🟡 Sederhana +200 • 🔴 Pandai +300.<br>
+        <b>Rebutan:</b> Jika salah, kumpulan seterusnya boleh menjawab. Maksimum <b>2 rebutan</b> bagi satu soalan.
       </div>
 
       <div class="mt-5 flex flex-wrap gap-3">
@@ -190,10 +234,10 @@ button{font:inherit}
       <div class="title neon mt-2">TAHNIAH, PEREKA MUDA!</div>
       <div id="stars" class="text-5xl mt-4"></div>
       <div class="grid2 mt-5">
-        <div class="infoCard glass"><div class="small">SKOR AKHIR</div><div id="finalScore" class="text-3xl font-black"></div></div>
-        <div class="infoCard glass"><div class="small">XP</div><div id="finalXP" class="text-3xl font-black"></div></div>
-        <div class="infoCard glass"><div class="small">COMBO TERTINGGI</div><div id="finalCombo" class="text-3xl font-black"></div></div>
-        <div class="infoCard glass"><div class="small">KETEPATAN</div><div id="finalAcc" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">JUMLAH SKOR KELAS</div><div id="finalScore" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">TAHAP DIMAINKAN</div><div id="finalXP" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">SOALAN DIJAWAB</div><div id="finalCombo" class="text-3xl font-black"></div></div>
+        <div class="infoCard glass"><div class="small">JAWAPAN BETUL</div><div id="finalAcc" class="text-3xl font-black"></div></div>
       </div>
       <div class="mt-5 infoCard glass text-left">
         <b>DATA RBT DIPULIHKAN:</b><br><br>
@@ -210,29 +254,50 @@ button{font:inherit}
 <script>
 const TEAM_NAMES=["ROBO INOVATOR","CYBER PEREKA","TEKNO KREATIF","MECHA BUILDER","NOVA DESIGN","TITAN RBT"];
 
-const Q=[
-{type:"MASALAH",visual:"books",q:"Buku sering berselerak di atas meja. Apakah masalah utama?",o:["Buku terlalu berat","Tiada tempat penyimpanan yang sesuai","Meja terlalu cantik","Pensel terlalu pendek"],a:1,tip:"Fikirkan punca buku tidak tersusun."},
-{type:"PILIH PRODUK",visual:"stationery",q:"Alat tulis sering hilang dan berselerak. Produk paling sesuai ialah...",o:["Bekas alat tulis","Rak kasut","Bekas makanan","Penyangkut baju"],a:0,tip:"Pilih produk yang menyimpan alat tulis."},
-{type:"PROSES",visual:"flow",q:"Apakah langkah pertama dalam pembangunan produk?",o:["Membina produk","Mengenal pasti masalah","Menjual produk","Menghias produk"],a:1,tip:"Sebelum membina, kita mesti faham masalah."},
-{type:"PROSES",visual:"bulb",q:"Selepas mengenal pasti masalah, apakah langkah seterusnya?",o:["Menjana idea","Membuang bahan","Menjual produk","Terus membina"],a:0,tip:"Selepas masalah diketahui, fikirkan beberapa penyelesaian."},
-{type:"LAKARAN",visual:"sketch",q:"Apakah kegunaan lakaran dalam pembangunan produk?",o:["Menunjukkan idea reka bentuk","Menggantikan produk sebenar","Mengira markah","Hiasan buku sahaja"],a:0,tip:"Lakaran menunjukkan rupa dan idea produk sebelum dibina."},
-{type:"PENILAIAN",visual:"sketch",q:"Mengapakah lakaran perlu dinilai?",o:["Mencari kelemahan dan membuat penambahbaikan","Supaya lebih mahal","Untuk menyalin idea orang lain","Supaya tidak perlu membina"],a:0,tip:"Penilaian membantu kita mengenal pasti kelemahan."},
-{type:"PENAMBAHBAIKAN",visual:"holder",q:"Bekas alat tulis mudah tumbang. Penambahbaikan terbaik ialah...",o:["Lebarkan tapak","Kecilkan tapak","Buang tapak","Tinggikan tanpa sebab"],a:0,tip:"Tapak lebih lebar meningkatkan kestabilan."},
-{type:"BAHAN",visual:"phone",q:"Bahan manakah paling sesuai untuk prototaip pemegang telefon?",o:["Kadbod","Air","Kapas","Daun basah"],a:0,tip:"Pilih bahan yang mudah dibentuk tetapi masih boleh menyokong."},
-{type:"FUNGSI",visual:"product",q:"Produk yang baik mestilah...",o:["Berfungsi dan sesuai dengan keperluan","Cantik sahaja","Mahal","Sangat besar"],a:0,tip:"Produk perlu memenuhi fungsi dan keperluan pengguna."},
-{type:"PROSES",visual:"flow",q:"Yang manakah urutan pembangunan produk yang betul?",o:["Masalah → Idea → Lakaran → Nilai → Bina","Bina → Masalah → Lakaran","Lakaran → Jual → Masalah","Bina → Jual → Idea"],a:0,tip:"Ingat ayat kunci: Masalah, Idea, Lakaran, Nilai, Bina."},
-{type:"PENAMBAHBAIKAN",visual:"phone",q:"Pemegang telefon sering terjatuh ke belakang. Apakah penambahbaikan terbaik?",o:["Tambah sokongan belakang","Buang tapak","Gunakan bahan lebih nipis","Tinggikan tanpa sokongan"],a:0,tip:"Cari perubahan yang menambah kestabilan."},
-{type:"IDEA",visual:"bulb",q:"Mengapakah beberapa idea perlu dihasilkan?",o:["Supaya idea terbaik boleh dipilih","Supaya kerja lebih lama","Supaya bahan habis","Supaya produk mahal"],a:0,tip:"Beberapa idea membolehkan perbandingan dibuat."},
-{type:"BAHAN",visual:"materials",q:"Apakah perkara penting semasa memilih bahan?",o:["Kesesuaian bahan dengan fungsi produk","Warna kegemaran sahaja","Nama bahan","Saiz meja guru"],a:0,tip:"Bahan perlu sesuai dengan fungsi, bentuk dan keselamatan produk."},
-{type:"FUNGSI",visual:"product",q:"Apakah tujuan utama sesuatu produk dihasilkan?",o:["Menyelesaikan masalah atau memenuhi keperluan","Menghabiskan bahan","Hiasan semata-mata","Mendapat markah sahaja"],a:0,tip:"Produk bermula daripada masalah atau keperluan."},
-{type:"CIRI PRODUK",visual:"shield",q:"Antara berikut, manakah ciri produk yang baik?",o:["Selamat, berfungsi dan sesuai dengan pengguna","Berwarna terang sahaja","Mahal sahaja","Besar sahaja"],a:0,tip:"Produk baik perlu selamat dan berfungsi."},
-
-{type:"BOSS 1/5 • MASALAH",visual:"stationery",boss:true,q:"MEGA DRONE: Alat tulis murid berselerak. Apakah masalah yang perlu diselesaikan?",o:["Tiada tempat simpanan teratur","Warna pensel tidak sama","Meja terlalu tinggi","Buku terlalu nipis"],a:0,tip:"Fokus pada sebab alat tulis tidak tersusun."},
-{type:"BOSS 2/5 • PRODUK",visual:"holder",boss:true,q:"MEGA DRONE: Produk manakah paling sesuai untuk masalah alat tulis berselerak?",o:["Organizer meja","Rak kasut","Bekas makanan","Penyangkut tuala"],a:0,tip:"Pilih penyelesaian terus untuk meja belajar."},
-{type:"BOSS 3/5 • LAKARAN",visual:"sketch",boss:true,q:"MEGA DRONE: Apakah tindakan sebelum organizer meja dibina?",o:["Hasilkan lakaran reka bentuk","Terus gam semua bahan","Menjualnya","Membuang idea"],a:0,tip:"Produk dibina berdasarkan lakaran."},
-{type:"BOSS 4/5 • PENAMBAHBAIKAN",visual:"holder",boss:true,q:"MEGA DRONE: Lakaran organizer terlalu sempit. Penambahbaikan terbaik?",o:["Tambah ruang atau kompartmen yang sesuai","Buang semua pembahagi","Kecilkan lagi","Gunakan bahan mudah koyak"],a:0,tip:"Penambahbaikan perlu menjadikan produk lebih berguna."},
-{type:"BOSS 5/5 • BAHAN",visual:"materials",boss:true,q:"MEGA DRONE: Bahan prototaip manakah paling sesuai untuk organizer meja?",o:["Kadbod tebal","Tisu basah","Air","Daun lembut"],a:0,tip:"Pilih bahan yang mudah dibina dan cukup kukuh."}
-];
+const QUESTION_BANK={
+lemah:[
+{type:"PROSES",visual:"flow",q:"Apakah langkah pertama dalam pembangunan produk?",o:["Membina produk","Mengenal pasti masalah","Menjual produk","Menghias produk"],a:1,tip:"Sebelum membina sesuatu, kita perlu tahu masalah yang hendak diselesaikan."},
+{type:"LAKARAN",visual:"sketch",q:"Apakah kegunaan lakaran?",o:["Menunjukkan idea reka bentuk","Menghias buku","Menjual produk","Mengira harga"],a:0,tip:"Lakaran menunjukkan idea produk sebelum dibina."},
+{type:"IDEA",visual:"bulb",q:"Selepas mengenal pasti masalah, apakah langkah seterusnya?",o:["Menjana idea","Menjual produk","Membuang bahan","Terus membina"],a:0,tip:"Selepas masalah dikenal pasti, fikirkan beberapa penyelesaian."},
+{type:"FUNGSI",visual:"product",q:"Mengapakah sesuatu produk dihasilkan?",o:["Untuk menyelesaikan masalah atau memenuhi keperluan","Untuk menghabiskan bahan","Untuk hiasan sahaja","Untuk mendapatkan markah sahaja"],a:0,tip:"Produk mempunyai fungsi kepada pengguna."},
+{type:"BAHAN",visual:"materials",q:"Yang manakah contoh bahan yang sesuai digunakan untuk prototaip mudah?",o:["Kadbod","Air","Asap","Cahaya"],a:0,tip:"Pilih bahan yang boleh dibentuk menjadi model."},
+{type:"LAKARAN",visual:"sketch",q:"Sebelum membina produk, kita perlu menyediakan...",o:["Lakaran","Iklan","Resit","Poster jualan"],a:0,tip:"Lakaran membantu merancang rupa dan bentuk produk."},
+{type:"PILIH PRODUK",visual:"stationery",q:"Alat tulis berselerak. Produk paling sesuai ialah...",o:["Bekas alat tulis","Rak kasut","Bekas makanan","Penyangkut baju"],a:0,tip:"Pilih produk yang boleh menyimpan alat tulis."},
+{type:"PENILAIAN",visual:"shield",q:"Selepas menghasilkan lakaran, apakah yang perlu dilakukan?",o:["Menilai lakaran","Terus menjual produk","Membuang lakaran","Membeli produk lain"],a:0,tip:"Lakaran perlu dinilai sebelum produk dibina."},
+{type:"CIRI PRODUK",visual:"shield",q:"Produk yang baik mestilah...",o:["Berfungsi","Mahal","Sangat besar","Berat"],a:0,tip:"Fungsi merupakan perkara penting dalam sesuatu produk."},
+{type:"PROSES",visual:"flow",q:"Yang manakah urutan paling tepat?",o:["Masalah → Idea → Lakaran → Nilai → Bina","Bina → Jual → Masalah","Lakaran → Masalah → Jual","Bina → Idea → Masalah"],a:0,tip:"Ingat: Masalah, Idea, Lakaran, Nilai, Bina."},
+{type:"PENAMBAHBAIKAN",visual:"holder",q:"Apakah maksud penambahbaikan?",o:["Membetulkan kelemahan supaya produk lebih baik","Membuang semua idea","Menukar nama produk sahaja","Menambah harga produk"],a:0,tip:"Penambahbaikan dilakukan selepas kelemahan dikenal pasti."},
+{type:"KESELAMATAN",visual:"shield",q:"Semasa membina produk, perkara penting yang mesti dijaga ialah...",o:["Keselamatan","Warna kegemaran sahaja","Harga paling mahal","Saiz paling besar"],a:0,tip:"Keselamatan perlu diberi perhatian semasa menghasilkan produk."}
+],
+sederhana:[
+{type:"PILIH PRODUK",visual:"books",q:"Buku murid sering berselerak di atas meja. Produk paling sesuai ialah...",o:["Rak buku mini","Payung","Lampu meja","Bekas makanan"],a:0,tip:"Pilih produk yang dapat menyusun buku."},
+{type:"PENAMBAHBAIKAN",visual:"holder",q:"Bekas alat tulis mudah tumbang. Apakah penambahbaikan terbaik?",o:["Lebarkan tapaknya","Kecilkan tapaknya","Tinggikan tanpa sebab","Buangkan tapaknya"],a:0,tip:"Kestabilan bertambah apabila tapak lebih sesuai."},
+{type:"IDEA",visual:"bulb",q:"Mengapakah beberapa idea perlu dihasilkan sebelum memilih reka bentuk?",o:["Supaya idea terbaik boleh dipilih","Supaya kerja menjadi lambat","Supaya bahan cepat habis","Supaya produk lebih mahal"],a:0,tip:"Beberapa idea boleh dibandingkan sebelum memilih satu."},
+{type:"BAHAN",visual:"materials",q:"Apakah perkara utama ketika memilih bahan untuk sesuatu produk?",o:["Kesesuaian bahan dengan fungsi produk","Warna kegemaran sahaja","Nama bahan","Harga paling mahal"],a:0,tip:"Bahan perlu sesuai dengan tujuan produk."},
+{type:"PENILAIAN",visual:"sketch",q:"Selepas lakaran dinilai dan terdapat kelemahan, apakah tindakan seterusnya?",o:["Membuat penambahbaikan","Membuang semua idea","Terus menjual","Berhenti membina"],a:0,tip:"Gunakan hasil penilaian untuk memperbaiki reka bentuk."},
+{type:"PROSES",visual:"flow",q:"Pilih urutan proses pembangunan produk yang betul.",o:["Masalah → Idea → Lakaran → Nilai → Bina","Bina → Idea → Masalah → Jual","Idea → Jual → Lakaran → Bina","Lakaran → Bina → Masalah → Nilai"],a:0,tip:"Proses bermula dengan masalah dan berakhir dengan pembinaan."},
+{type:"PENAMBAHBAIKAN",visual:"phone",q:"Pemegang telefon sering terjatuh ke belakang. Apakah penambahbaikan terbaik?",o:["Tambah sokongan belakang","Buang tapak","Gunakan bahan lebih nipis","Tinggikan tanpa sokongan"],a:0,tip:"Cari perubahan yang menjadikan produk lebih stabil."},
+{type:"FUNGSI",visual:"product",q:"Sebuah produk kelihatan cantik tetapi sukar digunakan. Apakah masalah utamanya?",o:["Fungsi produk tidak sesuai","Warna terlalu cantik","Nama produk terlalu pendek","Harga belum ditulis"],a:0,tip:"Produk perlu mudah dan sesuai digunakan."},
+{type:"BAHAN",visual:"phone",q:"Bahan manakah lebih sesuai untuk prototaip pemegang telefon yang perlu kukuh?",o:["Kadbod tebal","Tisu","Kapas longgar","Daun basah"],a:0,tip:"Pilih bahan yang cukup kukuh untuk menyokong telefon."},
+{type:"PENILAIAN",visual:"shield",q:"Mengapakah produk perlu dinilai selepas dibina?",o:["Untuk melihat sama ada produk berfungsi dengan baik","Untuk menukar nama sahaja","Untuk menambah hiasan tanpa sebab","Untuk membuang produk"],a:0,tip:"Penilaian membantu mengetahui keberkesanan produk."},
+{type:"MASALAH",visual:"stationery",q:"Pensel dan pembaris kerap hilang kerana tidak mempunyai tempat tetap. Apakah keperluan pengguna?",o:["Tempat penyimpanan alat tulis","Rak kasut","Lampu tidur","Bekas minuman"],a:0,tip:"Keperluan mesti berkaitan terus dengan masalah."},
+{type:"CIRI PRODUK",visual:"shield",q:"Antara berikut, kombinasi manakah menunjukkan produk yang baik?",o:["Selamat, berfungsi dan sesuai dengan pengguna","Cantik dan mahal sahaja","Besar dan berat sahaja","Berwarna terang sahaja"],a:0,tip:"Produk yang baik perlu memenuhi lebih daripada satu aspek."}
+],
+pandai:[
+{type:"ANALISIS",visual:"phone",q:"Pemegang telefon stabil tetapi sudutnya terlalu tegak dan sukar dilihat. Apakah penambahbaikan terbaik?",o:["Tambah mekanisme pelaras sudut","Buang tapak","Kecilkan keseluruhan produk","Buang sokongan belakang"],a:0,tip:"Penambahbaikan perlu menyelesaikan masalah sudut pandangan."},
+{type:"ANALISIS",visual:"sketch",q:"Lakaran produk sangat menarik tetapi tidak menyelesaikan masalah pengguna. Apakah tindakan terbaik?",o:["Nilai semula fungsi dan tambah baik lakaran","Terus bina kerana lakaran cantik","Tukar warna sahaja","Terus jual produk"],a:0,tip:"Fungsi dan keperluan pengguna lebih penting daripada rupa semata-mata."},
+{type:"PEMILIHAN IDEA",visual:"sketch",q:"Dua lakaran memenuhi fungsi yang sama. Bagaimanakah idea terbaik patut dipilih?",o:["Bandingkan fungsi, keselamatan dan kesesuaian","Pilih yang paling berwarna","Pilih yang paling besar","Pilih secara rawak"],a:0,tip:"Gunakan kriteria reka bentuk, bukan pilihan rawak."},
+{type:"ANALISIS STRUKTUR",visual:"holder",q:"Organizer mempunyai banyak ruang tetapi mudah runtuh apabila penuh. Aspek utama yang perlu diperbaiki ialah...",o:["Kestabilan struktur","Nama produk","Warna produk","Corak hiasan"],a:0,tip:"Masalah berlaku apabila produk menerima beban."},
+{type:"BAHAN",visual:"materials",q:"Bahan yang dipilih terlalu lembut untuk menampung telefon. Apakah tindakan terbaik?",o:["Tukar kepada bahan yang lebih kukuh","Tambah warna","Kurangkan fungsi produk","Terus gunakan bahan sama"],a:0,tip:"Sifat bahan perlu sesuai dengan beban dan fungsi."},
+{type:"PENGUJIAN",visual:"shield",q:"Mengapakah produk perlu diuji selepas pembinaan?",o:["Menilai fungsi dan mengenal pasti kelemahan","Menentukan nama produk","Menambah bahan tanpa sebab","Menghias produk sahaja"],a:0,tip:"Pengujian memberi bukti sama ada produk berfungsi seperti dirancang."},
+{type:"ANALISIS",visual:"holder",q:"Rak mini kukuh tetapi terlalu besar untuk meja murid. Penambahbaikan paling sesuai ialah...",o:["Ubah dimensi tanpa menjejaskan fungsi","Tambah lebih banyak bahan","Jadikan lebih berat","Tambah hiasan sahaja"],a:0,tip:"Saiz produk perlu sesuai dengan ruang pengguna."},
+{type:"KESELAMATAN",visual:"shield",q:"Produk mempunyai bucu tajam walaupun berfungsi dengan baik. Apakah keputusan terbaik?",o:["Baiki bucu kerana aspek keselamatan belum dipenuhi","Terus guna kerana produk berfungsi","Cat bucu dengan warna lain sahaja","Tambah harga produk"],a:0,tip:"Produk yang berfungsi masih perlu selamat."},
+{type:"PENILAIAN",visual:"flow",q:"Semasa ujian, produk gagal memenuhi satu fungsi utama. Apakah langkah paling tepat?",o:["Kenal pasti punca, tambah baik dan uji semula","Terus jual produk","Buang semua lakaran asal","Hanya tukar nama produk"],a:0,tip:"Penambahbaikan perlu berdasarkan kelemahan yang ditemui."},
+{type:"PEMILIHAN BAHAN",visual:"materials",q:"Dua bahan sama kuat, tetapi satu lebih mudah dipotong dan dibentuk. Untuk prototaip sekolah, pilihan lebih sesuai ialah...",o:["Bahan yang mudah dibentuk dan masih memenuhi fungsi","Bahan yang paling sukar digunakan","Bahan paling mahal","Pilih secara rawak"],a:0,tip:"Pertimbangkan kebolehkerjaan bahan selain kekuatan."},
+{type:"ANALISIS PENGGUNA",visual:"product",q:"Produk sesuai untuk orang dewasa tetapi terlalu tinggi untuk murid Tahun 6. Apakah prinsip yang perlu diperbaiki?",o:["Kesesuaian dengan pengguna sasaran","Nama produk","Warna produk","Bilangan hiasan"],a:0,tip:"Reka bentuk perlu mengambil kira pengguna sasaran."},
+{type:"JUSTIFIKASI",visual:"sketch",q:"Mengapakah lakaran yang telah ditambah baik perlu dirujuk semasa pembinaan?",o:["Supaya produk dibina mengikut keputusan reka bentuk yang telah dipilih","Supaya semua bahan mesti digunakan","Supaya produk menjadi paling mahal","Supaya tidak perlu menguji produk"],a:0,tip:"Lakaran menjadi panduan utama semasa pembinaan."}
+]
+};
 
 const cv=document.getElementById('game'),ctx=cv.getContext('2d');
 const cam=document.getElementById('cam');
@@ -241,6 +306,10 @@ const vis=document.getElementById('visualCanvas'),vctx=vis.getContext('2d');
 let W=0,H=0,DPR=1,started=false,useCam=false,hands=null,handLm=null,camStream=null,handLoopRunning=false,handBusy=false;
 let pointer={x:0,y:0,active:false};
 let qi=0,current=null,drones=[],lock=-1,lockStart=0,lockP=0,lastFire=0;
+let selectedLevel='lemah',currentQuestions=[],questionOrder=[];
+let turnOwner=0,stealCount=0,maxSteals=2;
+let teamCorrect=[0,0,0,0,0,0];
+let teamLevelCorrect=Array.from({length:6},()=>({lemah:0,sederhana:0,pandai:0}));
 let score=0,xp=0,combo=1,maxCombo=1,shots=0,correct=0,team=0,teamScores=[0,0,0,0,0,0];
 let particles=[],beam=null,flash=0,bossHP=5,bossPulse=0,bossIntroDone=false;
 let audioCtx=null,questionReady=false;
@@ -271,11 +340,45 @@ function makeTeams(){
   b.onclick=()=>{team=i;[...el.children].forEach((x,j)=>x.classList.toggle('selected',j===i));renderTeams()};el.appendChild(b)
  })
 }
-function initProgress(){const p=document.getElementById('progress');p.innerHTML='';for(let i=0;i<Q.length;i++){const n=document.createElement('span');n.className='node';p.appendChild(n)}}
-function updateProgress(){[...document.querySelectorAll('.node')].forEach((n,i)=>n.classList.toggle('done',i<qi));document.getElementById('qnum').textContent=`MISSION ${Math.min(qi+1,Q.length)} / ${Q.length}`}
+
+function makeLevelSelect(){
+ document.querySelectorAll('[data-level]').forEach(btn=>{
+   btn.onclick=()=>{
+     selectedLevel=btn.dataset.level;
+     document.querySelectorAll('[data-level]').forEach(b=>b.classList.toggle('selected',b===btn));
+     updateLevelBadge();
+   };
+ });
+}
+function levelPoints(){return selectedLevel==='lemah'?100:selectedLevel==='sederhana'?200:300}
+function levelLabel(){return selectedLevel==='lemah'?'LEMAH':selectedLevel==='sederhana'?'SEDERHANA':'PANDAI'}
+function levelIcon(){return selectedLevel==='lemah'?'🟢':selectedLevel==='sederhana'?'🟡':'🔴'}
+function updateLevelBadge(){
+ const el=document.getElementById('levelText');
+ if(el) el.textContent=`TAHAP ${levelLabel()} • +${levelPoints()} MATA`;
+ const badge=document.getElementById('levelBadge');
+ if(badge) badge.firstChild.textContent=levelIcon()+' ';
+}
+function initProgress(){
+ const p=document.getElementById('progress');p.innerHTML='';
+ for(let i=0;i<currentQuestions.length;i++){const n=document.createElement('span');n.className='node';p.appendChild(n)}
+}
+
+function updateProgress(){
+ [...document.querySelectorAll('.node')].forEach((n,i)=>n.classList.toggle('done',i<qi));
+ document.getElementById('qnum').textContent=`MISSION ${Math.min(qi+1,currentQuestions.length)} / ${currentQuestions.length}`;
+}
 function renderTeams(){
  const el=document.getElementById('teamRows');el.innerHTML='';
- TEAM_NAMES.forEach((name,i)=>{const d=document.createElement('div');d.className='teamrow'+(i===team?' active':'');d.innerHTML=`<span>${i+1}. ${name}</span><b>${teamScores[i]}</b>`;el.appendChild(d)})
+ const ranking=TEAM_NAMES.map((name,i)=>({name,i,score:teamScores[i],correct:teamCorrect[i]}))
+   .sort((a,b)=>b.score-a.score || b.correct-a.correct || a.i-b.i);
+ ranking.forEach((r,pos)=>{
+   const d=document.createElement('div');
+   d.className='teamrow'+(r.i===team?' active':'');
+   const medal=pos===0?'🏆':pos===1?'🥈':pos===2?'🥉':'';
+   d.innerHTML=`<div><span class="rankNo">${pos+1}</span>${medal} ${r.name}<div class="rankMeta">Betul: ${r.correct}</div></div><b>${r.score}</b>`;
+   el.appendChild(d);
+ });
 }
 function hud(){document.getElementById('score').textContent=score;document.getElementById('xp').textContent=xp;document.getElementById('combo').textContent='×'+combo;renderTeams()}
 function ai(t,voice=false){document.getElementById('aiText').textContent=t}
@@ -289,7 +392,7 @@ async function countdown(){
   await new Promise(r=>setTimeout(r,n==='GO!'?500:650))
  }
  wrap.style.display='none';questionReady=true;
- ai("Sasaran aktif. Pilih jawapan paling tepat.",true)
+ ai(`${TEAM_NAMES[team]}, pilih jawapan paling tepat.`,true)
 }
 async function teamSplash(){
  const el=document.getElementById('teamTurn');document.getElementById('teamTurnText').textContent=`KUMPULAN ${team+1} • ${TEAM_NAMES[team]}`;el.style.display='flex';
@@ -298,9 +401,18 @@ async function teamSplash(){
 }
 
 function start(cameraMode){
- useCam=cameraMode;started=true;score=0;xp=0;combo=1;maxCombo=1;shots=0;correct=0;teamScores=[0,0,0,0,0,0];qi=0;bossHP=5;bossIntroDone=false;
- document.getElementById('startModal').style.display='none';document.getElementById('victoryModal').style.display='none';document.getElementById('modeText').textContent=cameraMode?'AR KAMERA + TANGAN':'MOUSE';
- initProgress();hud();newQ();if(cameraMode)initCamera()
+ useCam=cameraMode;started=true;
+ score=0;xp=0;combo=1;maxCombo=1;shots=0;correct=0;
+ teamScores=[0,0,0,0,0,0];teamCorrect=[0,0,0,0,0,0];
+ teamLevelCorrect=Array.from({length:6},()=>({lemah:0,sederhana:0,pandai:0}));
+ qi=0;stealCount=0;turnOwner=team;
+ currentQuestions=shuffle(QUESTION_BANK[selectedLevel]);
+ questionOrder=[...Array(currentQuestions.length).keys()];
+ document.getElementById('startModal').style.display='none';
+ document.getElementById('victoryModal').style.display='none';
+ document.getElementById('modeText').textContent=cameraMode?'AR KAMERA + TANGAN':'MOUSE';
+ updateLevelBadge();initProgress();hud();newQ();
+ if(cameraMode)initCamera()
 }
 document.getElementById('startMouse').onclick=()=>start(false);
 document.getElementById('startCam').onclick=()=>start(true);
@@ -308,11 +420,16 @@ document.getElementById('restart').onclick=()=>start(useCam);
 document.getElementById('home').onclick=()=>{stopCamera();started=false;document.getElementById('victoryModal').style.display='none';document.getElementById('startModal').style.display='flex'};
 
 function newQ(){
- if(qi>=Q.length){win();return}
- current=Q[qi];document.getElementById('question').textContent=current.q;document.getElementById('typeText').textContent=current.type;updateProgress();
- const boss=!!current.boss;document.getElementById('bossHud').style.display=boss?'block':'none';
- if(boss){document.getElementById('hearts').textContent='❤️'.repeat(bossHP)+'🖤'.repeat(5-bossHP);bossPulse=1}
- drawVisual(current.visual);
+ if(qi>=currentQuestions.length){win();return}
+ current=currentQuestions[questionOrder[qi]];
+ team=turnOwner;
+ stealCount=0;
+
+ document.getElementById('question').textContent=current.q;
+ document.getElementById('typeText').textContent=current.type;
+ document.getElementById('bossHud').style.display='none';
+ updateProgress();updateLevelBadge();drawVisual(current.visual);
+
  const opts=shuffle(current.o.map((text,idx)=>({text,idx})));
  const cx=W/2,cy=H/2+40,rx=Math.min(W*.31,390),ry=Math.min(H*.23,205);
  drones=opts.map((o,i)=>{
@@ -320,9 +437,39 @@ function newQ(){
    const tx=cx+Math.cos(a)*rx,ty=cy+Math.sin(a)*ry;
    return{x:i%2===0?-320:W+320,y:ty,tx,ty,w:Math.min(275,W*.29),h:92,text:o.text,idx:o.idx,phase:Math.random()*6.28,hit:0,arrive:0}
  });
+
  lock=-1;lockP=0;questionReady=false;
- if(boss&&!bossIntroDone){bossIntroDone=true;ai("Amaran! Mega Drone dikesan. Lima teras perlu dimusnahkan!",true)}
- setTimeout(()=>teamSplash(),boss?1200:300)
+ ai(`Soalan untuk ${TEAM_NAMES[team]}. Nilai soalan: ${levelPoints()} mata.`);
+ setTimeout(()=>teamSplash(),300)
+}
+
+async function startSteal(){
+ questionReady=false;
+ stealCount++;
+ team=(team+1)%6;
+ hud();
+
+ const banner=document.getElementById('stealBanner');
+ document.getElementById('stealTeam').textContent=`KUMPULAN ${team+1} • ${TEAM_NAMES[team]}`;
+ document.getElementById('stealInfo').textContent=`Peluang rebutan ${stealCount} daripada ${maxSteals} • ${levelPoints()} mata`;
+ banner.style.display='block';
+ ai(`Rebut peluang! ${TEAM_NAMES[team]} boleh menjawab soalan yang sama.`);
+ await new Promise(r=>setTimeout(r,1100));
+ banner.style.display='none';
+ await teamSplash();
+}
+
+function finishUnanswered(){
+ questionReady=false;
+ const answer=current.o[current.a];
+ toast(`⛔ REBUTAN TAMAT<br><span style="font-size:.48em">Jawapan: ${answer}</span>`,false);
+ ai(`Tiada kumpulan berjaya menjawab. Jawapan yang betul ialah ${answer}.`);
+ setTimeout(()=>{
+   qi++;
+   turnOwner=(turnOwner+1)%6;
+   team=turnOwner;
+   newQ();
+ },1800);
 }
 function roundRect(c,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+rr,y);c.arcTo(x+w,y,x+w,y+h,rr);c.arcTo(x+w,y+h,x,y+h,rr);c.arcTo(x,y+h,x,y,rr);c.arcTo(x,y,x+w,y,rr);c.closePath()}
 function wrap(text,max,context=ctx){const ws=text.split(' '),ls=[];let l='';for(const w of ws){const t=l?l+' '+w:w;if(context.measureText(t).width>max&&l){ls.push(l);l=w}else l=t}if(l)ls.push(l);return ls.slice(0,3)}
@@ -357,16 +504,50 @@ function hit(x,y){
 }
 function fire(i){
  if(!questionReady)return;
- const now=performance.now();if(now-lastFire<520)return;lastFire=now;snd("fire");shots++;
- const d=drones[i];beam={x1:pointer.x||W/2,y1:pointer.y||H*.82,x2:d.x,y2:d.y,t:0};
+ const now=performance.now();
+ if(now-lastFire<520)return;
+ lastFire=now;snd("fire");shots++;
+
+ const d=drones[i];
+ beam={x1:pointer.x||W/2,y1:pointer.y||H*.82,x2:d.x,y2:d.y,t:0};
+
  if(d.idx===current.a){
-   questionReady=false;correct++;const gain=100*combo;score+=gain;xp+=100;teamScores[team]+=100;combo=Math.min(5,combo+1);maxCombo=Math.max(maxCombo,combo);explode(d.x,d.y);snd(current.boss?"boom":"good");
-   if(current.boss){bossHP=Math.max(0,bossHP-1);document.getElementById('hearts').textContent='❤️'.repeat(bossHP)+'🖤'.repeat(5-bossHP)}
-   toast(current.boss?`💥 TERAS BOSS ROSAK!<br><span style="font-size:.55em">+${gain} SCORE</span>`:`✅ BETUL!<br><span style="font-size:.55em">+${gain} SCORE</span>`,true);
-   ai(current.boss?"Tepat! Satu teras Mega Drone berjaya dimusnahkan.":"Hebat! Jawapan tepat. Data RBT berjaya dipulihkan.",true);hud();
-   setTimeout(()=>{qi++;team=(team+1)%6;newQ()},1200)
+   questionReady=false;
+   const gain=levelPoints();
+   correct++;
+   score+=gain;
+   xp+=gain;
+   teamScores[team]+=gain;
+   teamCorrect[team]++;
+   teamLevelCorrect[team][selectedLevel]++;
+   combo=Math.min(5,combo+1);
+   maxCombo=Math.max(maxCombo,combo);
+   explode(d.x,d.y);snd("good");
+
+   const stealMsg=stealCount>0?'🎯 BERJAYA REBUT!':'✅ BETUL!';
+   toast(`${stealMsg}<br><span style="font-size:.55em">+${gain} MATA • ${TEAM_NAMES[team]}</span>`,true);
+   ai(`${TEAM_NAMES[team]} mendapat ${gain} mata. Jawapan tepat!`);
+   hud();
+
+   setTimeout(()=>{
+     qi++;
+     turnOwner=(turnOwner+1)%6;
+     team=turnOwner;
+     newQ();
+   },1300);
+
  }else{
-   combo=1;flash=1;snd("bad");toast("❌ BUKAN SASARAN",false);ai("Cuba lagi. "+current.tip,true);hud()
+   combo=1;flash=1;snd("bad");hud();
+
+   if(stealCount<maxSteals){
+     toast(`❌ TIDAK TEPAT<br><span style="font-size:.5em">Soalan dibuka untuk REBUTAN</span>`,false);
+     ai(`${TEAM_NAMES[team]} belum tepat. ${current.tip}`);
+     setTimeout(()=>startSteal(),1000);
+   }else{
+     toast("❌ TIDAK TEPAT",false);
+     ai(`${TEAM_NAMES[team]} belum tepat. Dua peluang rebutan telah digunakan.`);
+     setTimeout(()=>finishUnanswered(),850);
+   }
  }
 }
 function explode(x,y){for(let i=0;i<58;i++)particles.push({x,y,vx:(Math.random()-.5)*12,vy:(Math.random()-.5)*12,life:1,size:2+Math.random()*6})}
@@ -598,13 +779,27 @@ function loop(t){drawBG(t);if(started){drawBoss(t);updateLock(t);drones.forEach(
 requestAnimationFrame(loop);
 
 function win(){
- started=false;questionReady=false;document.getElementById('bossHud').style.display='none';
- const acc=shots?Math.round(correct/shots*100):0,stars=acc>=80?3:acc>=60?2:1;
- document.getElementById('finalScore').textContent=score;document.getElementById('finalXP').textContent=xp;document.getElementById('finalCombo').textContent='×'+maxCombo;document.getElementById('finalAcc').textContent=acc+'%';document.getElementById('stars').textContent='⭐'.repeat(stars);
- document.getElementById('victoryModal').style.display='flex';snd("good");
+ started=false;questionReady=false;
+ document.getElementById('bossHud').style.display='none';
+
+ const totalCorrect=teamCorrect.reduce((a,b)=>a+b,0);
+ const ranking=TEAM_NAMES.map((name,i)=>({name,i,score:teamScores[i],correct:teamCorrect[i]}))
+   .sort((a,b)=>b.score-a.score || b.correct-a.correct || a.i-b.i);
+ const winner=ranking[0];
+
+ document.getElementById('finalScore').textContent=teamScores.reduce((a,b)=>a+b,0);
+ document.getElementById('finalXP').textContent=`${levelIcon()} ${levelLabel()}`;
+ document.getElementById('finalCombo').textContent=`${currentQuestions.length}`;
+ document.getElementById('finalAcc').textContent=`${totalCorrect}`;
+
+ const stars=winner.score>0?3:1;
+ document.getElementById('stars').innerHTML=`🏆 ${winner.name}<br><span style="font-size:.55em">${winner.score} MATA • ${winner.correct} JAWAPAN BETUL</span>`;
+ document.getElementById('victoryModal').style.display='flex';
+ ai(`Tahniah ${winner.name}. Pasukan ini mendapat tempat pertama dengan ${winner.score} mata.`);
+ snd("good");
 }
 
-makeTeams();initProgress();renderTeams();hud();drawVisual('flow');
+makeTeams();makeLevelSelect();currentQuestions=QUESTION_BANK[selectedLevel];updateLevelBadge();initProgress();renderTeams();hud();drawVisual('flow');
 </script>
 </body>
 </html>
