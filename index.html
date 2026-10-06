@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RBT Cyber Drone V4 — 3 Tahap + Sistem Rebutan</title>
+<title>RBT Cyber Drone V4.1 — Serah Soalan + Rebutan</title>
 <script src="https://cdn.tailwindcss.com">
 
 </script>
@@ -91,6 +91,18 @@ button{font:inherit}
 #levelBadge{position:absolute;left:18px;top:280px;z-index:24;padding:8px 11px;border-radius:14px;font-size:12px}
 @media(max-width:830px){.levelGrid{grid-template-columns:1fr}#levelBadge{top:255px}}
 
+
+#passBtn{
+ position:absolute;right:18px;bottom:96px;z-index:31;
+ padding:12px 18px;border-radius:16px;border:1px solid rgba(255,201,93,.65);
+ background:linear-gradient(180deg,rgba(96,62,18,.98),rgba(48,30,7,.98));
+ color:white;font-weight:1000;letter-spacing:.03em;cursor:pointer;
+ box-shadow:0 0 24px rgba(255,201,93,.16);
+}
+#passBtn:hover{transform:translateY(-1px);box-shadow:0 0 32px rgba(255,201,93,.28)}
+#passBtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+@media(max-width:830px){#passBtn{right:12px;bottom:92px;padding:10px 13px;font-size:12px}}
+
 </style>
 </head>
 <body>
@@ -101,7 +113,7 @@ button{font:inherit}
 
   <div class="hud">
     <div class="hudBox glass side">
-      <div class="small">RBT CYBER LAB • TAHUN 6 • <b style="color:#ffc95d">V4 • 3 TAHAP + REBUTAN</b></div>
+      <div class="small">RBT CYBER LAB • TAHUN 6 • <b style="color:#ffc95d">V4.1 • SERAH SOALAN + REBUTAN</b></div>
       <div class="font-black">UNIT 3: PEMBANGUNAN PRODUK</div>
       <div id="progress"></div>
     </div>
@@ -141,6 +153,8 @@ button{font:inherit}
     <canvas id="visualCanvas" width="440" height="190"></canvas>
   </div>
 
+  <button id="passBtn" type="button">⏭️ SERAH SOALAN</button>
+
   <div id="aiBox" class="glass">
     <div id="aiOrb">AI</div>
     <div>
@@ -171,10 +185,10 @@ button{font:inherit}
 
   <div id="startModal" class="modal">
     <div class="panel glass">
-      <div class="kicker">3 TAHAP • SISTEM REBUTAN • HAND TRACKING • WEB AR • RBT TAHUN 6</div>
-      <div class="title neon mt-2">RBT CYBER DRONE V4 • 3 TAHAP + REBUTAN</div>
+      <div class="kicker">3 TAHAP • SERAH SOALAN • REBUTAN • HAND TRACKING • WEB AR • RBT TAHUN 6</div>
+      <div class="title neon mt-2">RBT CYBER DRONE V4.1 • SERAH SOALAN + REBUTAN</div>
       <div class="subtitle mt-4">Misi Pembangunan Produk • 3 Tahap + Rebutan</div>
-      <p class="mt-4 text-lg">Guru pilih tahap Lemah, Sederhana atau Pandai. Jika kumpulan pertama salah, soalan dibuka kepada kumpulan lain melalui sistem REBUT PELUANG sehingga maksimum dua rebutan.</p>
+      <p class="mt-4 text-lg">Guru pilih tahap Lemah, Sederhana atau Pandai. Jika kumpulan tidak tahu jawapan, tekan SERAH SOALAN. Jika kumpulan menjawab salah, soalan juga masuk sistem REBUT PELUANG. Maksimum dua kali serahan/rebutan.</p>
 
       <div class="grid3 mt-5">
         <div class="infoCard glass">✋ <b>OPEN PALM</b><div class="small mt-1">Buka tapak tangan.</div></div>
@@ -210,7 +224,7 @@ button{font:inherit}
 
       <div class="mt-5 p-4 rounded-xl" style="background:rgba(255,201,93,.08);border:1px solid rgba(255,201,93,.23)">
         <b>Sistem markah:</b> 🟢 Lemah +100 • 🟡 Sederhana +200 • 🔴 Pandai +300.<br>
-        <b>Rebutan:</b> Jika salah, kumpulan seterusnya boleh menjawab. Maksimum <b>2 rebutan</b> bagi satu soalan.
+        <b>Rebutan:</b> Jika salah <b>atau</b> tekan SERAH SOALAN, kumpulan seterusnya boleh menjawab. Maksimum <b>2 serahan/rebutan</b> bagi satu soalan.
       </div>
 
       <div class="mt-5 flex flex-wrap gap-3">
@@ -359,6 +373,13 @@ function updateLevelBadge(){
  const badge=document.getElementById('levelBadge');
  if(badge) badge.firstChild.textContent=levelIcon()+' ';
 }
+function updatePassButton(){
+ const b=document.getElementById('passBtn');
+ if(!b)return;
+ b.disabled=!started || !questionReady || stealCount>=maxSteals;
+ if(stealCount===0) b.textContent='⏭️ SERAH SOALAN';
+ else b.textContent=`⏭️ SERAH LAGI (${stealCount}/${maxSteals})`;
+}
 function initProgress(){
  const p=document.getElementById('progress');p.innerHTML='';
  for(let i=0;i<currentQuestions.length;i++){const n=document.createElement('span');n.className='node';p.appendChild(n)}
@@ -391,7 +412,7 @@ async function countdown(){
   txt.textContent=n;snd(n==='GO!'?'good':'lock');
   await new Promise(r=>setTimeout(r,n==='GO!'?500:650))
  }
- wrap.style.display='none';questionReady=true;
+ wrap.style.display='none';questionReady=true;updatePassButton();
  ai(`${TEAM_NAMES[team]}, pilih jawapan paling tepat.`,true)
 }
 async function teamSplash(){
@@ -411,13 +432,14 @@ function start(cameraMode){
  document.getElementById('startModal').style.display='none';
  document.getElementById('victoryModal').style.display='none';
  document.getElementById('modeText').textContent=cameraMode?'AR KAMERA + TANGAN':'MOUSE';
- updateLevelBadge();initProgress();hud();newQ();
+ updateLevelBadge();initProgress();hud();updatePassButton();newQ();
  if(cameraMode)initCamera()
 }
+document.getElementById('passBtn').onclick=passQuestion;
 document.getElementById('startMouse').onclick=()=>start(false);
 document.getElementById('startCam').onclick=()=>start(true);
 document.getElementById('restart').onclick=()=>start(useCam);
-document.getElementById('home').onclick=()=>{stopCamera();started=false;document.getElementById('victoryModal').style.display='none';document.getElementById('startModal').style.display='flex'};
+document.getElementById('home').onclick=()=>{stopCamera();started=false;questionReady=false;updatePassButton();document.getElementById('victoryModal').style.display='none';document.getElementById('startModal').style.display='flex'};
 
 function newQ(){
  if(qi>=currentQuestions.length){win();return}
@@ -438,29 +460,51 @@ function newQ(){
    return{x:i%2===0?-320:W+320,y:ty,tx,ty,w:Math.min(275,W*.29),h:92,text:o.text,idx:o.idx,phase:Math.random()*6.28,hit:0,arrive:0}
  });
 
- lock=-1;lockP=0;questionReady=false;
- ai(`Soalan untuk ${TEAM_NAMES[team]}. Nilai soalan: ${levelPoints()} mata.`);
+ lock=-1;lockP=0;questionReady=false;updatePassButton();
+ ai(`Soalan untuk ${TEAM_NAMES[team]}. Nilai soalan: ${levelPoints()} mata. Jika tidak tahu, tekan SERAH SOALAN.`);
  setTimeout(()=>teamSplash(),300)
 }
 
-async function startSteal(){
- questionReady=false;
+async function startSteal(reason='salah'){
+ questionReady=false;updatePassButton();
  stealCount++;
  team=(team+1)%6;
  hud();
 
  const banner=document.getElementById('stealBanner');
  document.getElementById('stealTeam').textContent=`KUMPULAN ${team+1} • ${TEAM_NAMES[team]}`;
- document.getElementById('stealInfo').textContent=`Peluang rebutan ${stealCount} daripada ${maxSteals} • ${levelPoints()} mata`;
+ document.getElementById('stealInfo').textContent=`${reason==='serah'?'Soalan diserahkan':'Peluang rebutan'} • ${stealCount} daripada ${maxSteals} • ${levelPoints()} mata`;
+ document.getElementById('stealTitle').textContent=reason==='serah'?'⏭️ SOALAN DISERAHKAN!':'⚡ REBUT PELUANG!';
  banner.style.display='block';
- ai(`Rebut peluang! ${TEAM_NAMES[team]} boleh menjawab soalan yang sama.`);
+
+ ai(reason==='serah'
+   ? `${TEAM_NAMES[team]} menerima soalan yang sama.`
+   : `Rebut peluang! ${TEAM_NAMES[team]} boleh menjawab soalan yang sama.`);
+
  await new Promise(r=>setTimeout(r,1100));
  banner.style.display='none';
  await teamSplash();
 }
+function passQuestion(){
+ if(!started || !questionReady)return;
+
+ if(stealCount>=maxSteals){
+   finishUnanswered();
+   return;
+ }
+
+ questionReady=false;
+ updatePassButton();
+ lock=-1;lockP=0;
+
+ toast(`⏭️ SOALAN DISERAHKAN<br><span style="font-size:.5em">${TEAM_NAMES[team]} tidak menjawab</span>`,false);
+ ai(`${TEAM_NAMES[team]} menyerahkan soalan kepada kumpulan seterusnya.`);
+
+ setTimeout(()=>startSteal('serah'),850);
+}
 
 function finishUnanswered(){
- questionReady=false;
+ questionReady=false;updatePassButton();
  const answer=current.o[current.a];
  toast(`⛔ REBUTAN TAMAT<br><span style="font-size:.48em">Jawapan: ${answer}</span>`,false);
  ai(`Tiada kumpulan berjaya menjawab. Jawapan yang betul ialah ${answer}.`);
@@ -512,7 +556,7 @@ function fire(i){
  beam={x1:pointer.x||W/2,y1:pointer.y||H*.82,x2:d.x,y2:d.y,t:0};
 
  if(d.idx===current.a){
-   questionReady=false;
+   questionReady=false;updatePassButton();
    const gain=levelPoints();
    correct++;
    score+=gain;
@@ -542,7 +586,7 @@ function fire(i){
    if(stealCount<maxSteals){
      toast(`❌ TIDAK TEPAT<br><span style="font-size:.5em">Soalan dibuka untuk REBUTAN</span>`,false);
      ai(`${TEAM_NAMES[team]} belum tepat. ${current.tip}`);
-     setTimeout(()=>startSteal(),1000);
+     setTimeout(()=>startSteal('salah'),1000);
    }else{
      toast("❌ TIDAK TEPAT",false);
      ai(`${TEAM_NAMES[team]} belum tepat. Dua peluang rebutan telah digunakan.`);
@@ -779,7 +823,7 @@ function loop(t){drawBG(t);if(started){drawBoss(t);updateLock(t);drones.forEach(
 requestAnimationFrame(loop);
 
 function win(){
- started=false;questionReady=false;
+ started=false;questionReady=false;updatePassButton();
  document.getElementById('bossHud').style.display='none';
 
  const totalCorrect=teamCorrect.reduce((a,b)=>a+b,0);
