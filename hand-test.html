@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ujian Tapak Tangan RBT</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<style>
+body{margin:0;background:#07111f;color:#eefcff;font-family:Arial,sans-serif;min-height:100vh;padding:20px}
+.wrap{width:min(1000px,96vw);margin:auto}
+.card{background:#0d2035;border:1px solid #68efff;border-radius:18px;padding:18px;box-shadow:0 0 30px #0aa3c522}
+h1{color:#72f8ff}
+button{padding:12px 18px;border-radius:12px;border:1px solid #72f8ff;background:#133d5a;color:white;font-weight:700;cursor:pointer}
+.stage{position:relative;margin-top:16px;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9}
+video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+video{transform:scaleX(-1)}
+canvas{pointer-events:none}
+#status{margin-top:16px;padding:14px;border-radius:12px;background:#091727;white-space:pre-wrap;line-height:1.5}
+.good{color:#72f8ff}.bad{color:#ff95a5}.warn{color:#ffc95d}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>✋ Ujian Tapak Tangan RBT</h1>
+    <p>Tekan butang, benarkan kamera, kemudian angkat satu tapak tangan di hadapan kamera.</p>
+    <button id="start">MULA UJIAN TANGAN</button>
+    <div id="status">Status: belum diuji.</div>
+    <div class="stage">
+      <video id="v" autoplay playsinline muted></video>
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+const v=document.getElementById('v');
+const c=document.getElementById('c');
+const ctx=c.getContext('2d');
+const status=document.getElementById('status');
+let stream=null,hands=null,running=false,busy=false;
+
+function setStatus(msg,cls=''){status.className=cls;status.textContent=msg}
+
+function resize(){
+  const r=c.getBoundingClientRect();
+  c.width=Math.max(1,Math.round(r.width*devicePixelRatio));
+  c.height=Math.max(1,Math.round(r.height*devicePixelRatio));
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+addEventListener('resize',resize);
+
+function drawHand(lm){
+  const w=c.clientWidth,h=c.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  const P=id=>({x:(1-lm[id].x)*w,y:lm[id].y*h});
+  const chains=[[0,1,2,3,4],[0,5,6,7,8],[5,9,10,11,12],[9,13,14,15,16],[13,17,18,19,20],[0,17]];
+  ctx.strokeStyle='#72f8ff';ctx.lineWidth=3;ctx.shadowBlur=10;ctx.shadowColor='#72f8ff';
+  chains.forEach(ch=>{
+    ctx.beginPath();
+    ch.forEach((id,i)=>{const p=P(id);if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y)});
+    ctx.stroke();
+  });
+  lm.forEach((_,i)=>{const p=P(i);ctx.fillStyle=i===9?'#ffc95d':'#ffffff';ctx.beginPath();ctx.arc(p.x,p.y,i===9?7:4,0,Math.PI*2);ctx.fill()});
+  const palm=[0,5,9,13,17].map(P);
+  const x=palm.reduce((a,p)=>a+p.x,0)/palm.length;
+  const y=palm.reduce((a,p)=>a+p.y,0)/palm.length;
+  ctx.strokeStyle='#ffc95d';ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.stroke();
+}
+
+async function loop(){
+  if(!running)return;
+  requestAnimationFrame(loop);
+  if(busy||v.readyState<2||!hands)return;
+  busy=true;
+  try{
+    await hands.send({image:v});
+  }catch(e){
+    setStatus('MEDIAPIPE RALAT: '+(e?.message||e),'bad');
+  }finally{
+    busy=false;
+  }
+}
+
+document.getElementById('start').onclick=async()=>{
+  try{
+    setStatus('1/3 Membuka kamera...','warn');
+    stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    v.srcObject=stream;
+    await v.play();
+    resize();
+
+    setStatus('2/3 Memuatkan MediaPipe Hands...','warn');
+    hands=new Hands({
+      locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+    hands.setOptions({
+      maxNumHands:1,
+      modelComplexity:1,
+      minDetectionConfidence:0.35,
+      minTrackingConfidence:0.35
+    });
+    hands.onResults(res=>{
+      if(res.multiHandLandmarks&&res.multiHandLandmarks.length){
+        drawHand(res.multiHandLandmarks[0]);
+        setStatus('BERJAYA ✓\nMEDIAPIPE: AKTIF\nTANGAN: DIKESAN ✓\n\nGerakkan tapak tangan. Garisan cyan sepatutnya ikut tangan.','good');
+      }else{
+        ctx.clearRect(0,0,c.clientWidth,c.clientHeight);
+        setStatus('3/3 MEDIAPIPE AKTIF ✓\nTANGAN: BELUM DIKESAN\n\nAngkat satu tapak tangan dengan jelas di hadapan kamera.','warn');
+      }
+    });
+
+    running=true;
+    setStatus('3/3 MEDIAPIPE AKTIF ✓\nMenunggu tangan...','warn');
+    loop();
+  }catch(e){
+    console.error(e);
+    setStatus('RALAT: '+(e?.name||'UnknownError')+'\n'+(e?.message||''),'bad');
+  }
+};
+</script>
+</body>
+</html>
